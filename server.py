@@ -251,10 +251,20 @@ def api_google_login():
         
     conn.close()
     
+    # Si el usuario ya existía pero su nombre es 'Cliente', actualizarlo con el de Google
+    db_nombre = dict(row).get('nombre', 'Cliente')
+    if db_nombre == 'Cliente' and nombre and nombre != 'Cliente':
+        conn = get_db()
+        conn.execute("UPDATE usuarios SET nombre=? WHERE email=?", (nombre, email))
+        conn.commit()
+        conn.close()
+        db_nombre = nombre
+
     # Iniciar sesión
     session['user_id'] = row['id']
     session['rol'] = row['rol']
-    session['nombre'] = row['nombre']
+    session['nombre'] = db_nombre
+    session['email'] = row['email']
     
     return jsonify({'ok': True, 'rol': row['rol'], 'nombre': row['nombre']})
 
@@ -288,6 +298,9 @@ def api_login():
         expected_pw = row['password']
         if password == expected_pw or hashlib.sha256(f'{password}{SECRET}'.encode()).hexdigest() == expected_pw:
             session['user_id'] = row['id']
+            session['nombre'] = row['nombre']
+            session['email'] = row['email']
+            session['rol'] = row['rol']
             return jsonify({'ok': True}), 200
     return jsonify({'error': 'Credenciales inválidas'}), 401
 

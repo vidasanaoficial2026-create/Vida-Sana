@@ -1981,7 +1981,31 @@ function togglePwVisibility(inputId, iconId) {
     ico.className = 'fas fa-eye-slash';
   }
 }
-async function handleGoogleLogin(response) {
+
+  function toggleFavoriteStore(id, nombre, precio, imagen, element) {
+    let favs = [];
+    try { favs = JSON.parse(localStorage.getItem('favoritos')) || []; } catch(e){}
+    
+    const idx = favs.findIndex(f => f.id === id);
+    if (idx >= 0) {
+      favs.splice(idx, 1);
+      element.style.color = '#999';
+      element.innerHTML = '<i class="far fa-heart"></i>';
+      showToast('Eliminado de favoritos');
+    } else {
+      favs.push({id, nombre, precio, imagen});
+      element.style.color = '#dc3545';
+      element.innerHTML = '<i class="fas fa-heart"></i>';
+      showToast('Añadido a favoritos');
+    }
+    localStorage.setItem('favoritos', JSON.stringify(favs));
+    
+    if (typeof loadFavoritosProfile === 'function') {
+      loadFavoritosProfile();
+    }
+  }
+
+  async function handleGoogleLogin(response) {
   try {
     const res = await fetch('/api/google-login', {
       method: 'POST',

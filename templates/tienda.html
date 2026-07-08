@@ -1491,6 +1491,7 @@ img { max-width: 100%; height: auto; }
 @media (max-width: 600px) {
   .shop-grid { grid-template-columns: 1fr; }
 }
+.hidden-form { display: none !important; }
 </style>
 </head>
 <body>
@@ -2188,15 +2189,25 @@ function toggleLogin() {
   }
 }
 function toggleAuthView(view) {
+  // Ocultar todos primero usando clase y estilo por seguridad
+  document.getElementById('loginForm').style.display = 'none';
+  document.getElementById('registerForm').style.display = 'none';
+  if(document.getElementById('forgotForm')) document.getElementById('forgotForm').style.display = 'none';
+  
+  document.getElementById('loginForm').classList.add('hidden-form');
+  document.getElementById('registerForm').classList.add('hidden-form');
+  if(document.getElementById('forgotForm')) document.getElementById('forgotForm').classList.add('hidden-form');
+
   if (view === 'register') {
-    document.getElementById('loginForm').style.display = 'none';
+    document.getElementById('registerForm').classList.remove('hidden-form');
     document.getElementById('registerForm').style.display = 'block';
-    document.getElementById('forgotForm').style.display = 'none';
   } else if (view === 'forgot') {
-    document.getElementById('loginForm').style.display = 'none';
-    document.getElementById('registerForm').style.display = 'none';
-    document.getElementById('forgotForm').style.display = 'block';
+    if(document.getElementById('forgotForm')) {
+      document.getElementById('forgotForm').classList.remove('hidden-form');
+      document.getElementById('forgotForm').style.display = 'block';
+    }
   } else {
+    document.getElementById('loginForm').classList.remove('hidden-form');
     document.getElementById('loginForm').style.display = 'block';
   }
 }

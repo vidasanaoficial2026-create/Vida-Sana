@@ -2167,9 +2167,15 @@ function loadMoreProducts() {
 
 function prodCard(p) {
   const outOfStock = p.stock <= 0;
+  let favs = [];
+  try { favs = JSON.parse(localStorage.getItem('favoritos')) || []; } catch(e){}
+  const isFav = favs.some(f => f.id === p.id);
+  const heartClass = isFav ? 'fas fa-heart' : 'far fa-heart';
+  const heartColor = isFav ? '#dc3545' : '#999';
+  
   return `
     <div class="prod-card">
-      <div class="fav-icon"><i class="far fa-heart"></i></div>
+      <div class="fav-icon" onclick="toggleFavoriteStore(${p.id}, '${p.nombre.replace(/'/g, "\'")}', ${p.precio}, '${p.imagen || ''}', this)" style="cursor:pointer; color:${heartColor};"><i class="${heartClass}"></i></div>
       <div class="prod-card-image">
         ${p.imagen ? `<img src="${p.imagen}" alt="${p.nombre}" loading="lazy">` : '<i class="fas fa-leaf" style="font-size:56px;color:#ccc"></i>'}
       </div>

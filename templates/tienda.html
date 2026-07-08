@@ -2505,7 +2505,23 @@ function runCenterHighlight() {
 }
 requestAnimationFrame(runCenterHighlight);
 </script>
+
+<script>
+  window.addEventListener('DOMContentLoaded', () => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('open_cart') === '1') {
+      setTimeout(() => {
+        const overlay = document.getElementById('cartOverlay');
+        if (overlay) {
+          overlay.classList.add('open');
+          renderCart();
+        }
+      }, 500); // small delay to allow products and cart to load
+    }
+  });
+</script>
 </body>
+
 </html>
 
 

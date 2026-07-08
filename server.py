@@ -258,6 +258,24 @@ def api_google_login():
     
     return jsonify({'ok': True, 'rol': row['rol'], 'nombre': row['nombre']})
 
+
+@app.route('/api/mis-pedidos', methods=['GET'])
+def api_mis_pedidos():
+    if 'user_id' not in session:
+        return jsonify({'error': 'No autorizado'}), 401
+    conn = get_db()
+    pedidos = conn.execute("SELECT * FROM pedidos WHERE usuario_id=? ORDER BY id DESC", (session['user_id'],)).fetchall()
+    conn.close()
+    
+    pedidos_list = []
+    for p in pedidos:
+        pedidos_list.append({
+            'id': p['id'],
+            'total': p['total'],
+            'estado': p['estado']
+        })
+    return jsonify({'pedidos': pedidos_list})
+
 @app.route('/api/login', methods=['POST'])
 def api_login():
     data = request.json

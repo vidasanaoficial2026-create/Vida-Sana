@@ -1092,7 +1092,7 @@ img { max-width: 100%; height: auto; }
       </button>
       {% if session.get('nombre') %}
       <div style="display:flex; align-items:center; gap:10px;">
-        <span style="color:var(--text); font-weight:600; font-size:14px;">Hola, {{ session.get('nombre').split(' ')[0] }}</span>
+        <span style="color:var(--text); font-weight:600; font-size:14px; cursor:pointer;" onclick="document.getElementById(\'loginOverlay\').style.display=\'flex\'; toggleAuthView(\'profile\');" title="Ver mi perfil">Hola, {{ session.get('nombre').split(' ')[0] }} <i class="fas fa-caret-down"></i></span>
         <button class="header-login" onclick="logoutCustomer()" aria-label="Cerrar sesión" title="Cerrar sesión" style="color:#dc3545;">
           <i class="fas fa-sign-out-alt"></i>
         </button>
@@ -1818,7 +1818,60 @@ function toggleLogin() {
     setTimeout(() => document.getElementById('loginEmail').focus(), 100);
   }
 }
+function showProfileTab(tab) {
+  document.getElementById('contentPedidos').style.display = tab === 'pedidos' ? 'block' : 'none';
+  document.getElementById('contentFavoritos').style.display = tab === 'favoritos' ? 'block' : 'none';
+  
+  document.getElementById('tabPedidos').style.background = tab === 'pedidos' ? 'var(--primary)' : '#f5f5f5';
+  document.getElementById('tabPedidos').style.color = tab === 'pedidos' ? '#fff' : '#333';
+  
+  document.getElementById('tabFavoritos').style.background = tab === 'favoritos' ? 'var(--primary)' : '#f5f5f5';
+  document.getElementById('tabFavoritos').style.color = tab === 'favoritos' ? '#fff' : '#333';
+}
+
+async function loadPedidos() {
+  try {
+    const res = await fetch('/api/mis-pedidos');
+    const data = await res.json();
+    const container = document.getElementById('contentPedidos');
+    if (data.pedidos && data.pedidos.length > 0) {
+      container.innerHTML = data.pedidos.map(p => `
+        <div style="border:1px solid #eee; padding:10px; border-radius:5px; margin-bottom:10px; text-align:left;">
+          <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+            <strong style="color:var(--primary)">Pedido #${p.id}</strong>
+            <span style="font-size:12px; padding:2px 6px; background:#f0f0f0; border-radius:10px;">${p.estado}</span>
+          </div>
+          <div style="font-size:14px; color:#555;">Total: S/ ${p.total.toFixed(2)}</div>
+        </div>
+      `).join('');
+    } else {
+      container.innerHTML = '<p style="text-align:center; color:#666; font-size:14px;">No tienes pedidos aún.</p>';
+    }
+  } catch (e) {
+    document.getElementById('contentPedidos').innerHTML = '<p style="text-align:center; color:red; font-size:14px;">Error al cargar pedidos.</p>';
+  }
+}
+
+function loadFavoritosProfile() {
+  let favs = JSON.parse(localStorage.getItem('vid_sana_favoritos')) || [];
+  const container = document.getElementById('contentFavoritos');
+  if (favs.length > 0) {
+    container.innerHTML = favs.map(f => `
+      <div style="border:1px solid #eee; padding:10px; border-radius:5px; margin-bottom:10px; display:flex; align-items:center; gap:10px;">
+        <img src="${f.image}" style="width:50px; height:50px; object-fit:cover; border-radius:5px;">
+        <div style="text-align:left; flex:1;">
+          <div style="font-weight:600; font-size:14px; color:var(--text)">${f.name}</div>
+          <div style="font-size:13px; color:var(--primary)">S/ ${f.price.toFixed(2)}</div>
+        </div>
+      </div>
+    `).join('');
+  } else {
+    container.innerHTML = '<p style="text-align:center; color:#666; font-size:14px;">No tienes favoritos guardados.</p>';
+  }
+}
+
 function toggleAuthView(view) {
+
   // Ocultar todos primero usando clase y estilo por seguridad
   document.getElementById('loginForm').style.display = 'none';
   document.getElementById('registerForm').style.display = 'none';

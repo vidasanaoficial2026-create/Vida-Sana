@@ -1515,6 +1515,7 @@ img { max-width: 100%; height: auto; }
   .shop-section { margin-top: 140px; }
 }
 .hidden-form { display: none !important; }
+.prod-row-price, .cart-item-price, .cart-total { display: none !important; }
 </style>
 </head>
 <body>
@@ -2149,18 +2150,18 @@ function toggleCart() {
 }
 
 function checkout() {
-  if (!cart.length) { alert('Carrito vacío'); return; }
-  const total = cart.reduce((s, c) => s + c.precio * c.qty, 0);
-  let msg = 'Hola, quiero hacer el siguiente pedido:%0A%0A';
-  cart.forEach(c => { msg += `• ${c.nombre} x${c.qty} - S/${(c.precio * c.qty).toFixed(2)}%0A`; });
-  msg += `%0ATotal: S/${total.toFixed(2)}%0A%0ADatos de entrega:`;
+  if (!cart.length) return;
+  let total = cart.reduce((s, c) => s + (c.precio * c.qty), 0);
+  let msg = 'Hola, me gustaría hacer el siguiente pedido:%0A%0A';
+  cart.forEach(c => { msg += `  ${c.nombre} x${c.qty}%0A`; });
+  msg += `%0ADatos de entrega:`;
   window.open(`https://wa.me/51951679585?text=${msg}`, '_blank');
 }
 
 function whatsappProduct(id) {
   const p = allProducts.find(x => x.id === id);
   if (!p) return;
-  window.open(`https://wa.me/51951679585?text=${encodeURIComponent(`Hola, quiero información sobre ${p.nombre} (S/${p.precio.toFixed(2)})`)}`, '_blank');
+  window.open(`https://wa.me/51951679585?text=${encodeURIComponent(`Hola, quiero información sobre ${p.nombre}`)}`, '_blank');
 }
 
 function showToast(msg) {

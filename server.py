@@ -13,6 +13,7 @@ import smtplib
 import time
 from email.mime.text import MIMEText
 from dotenv import load_dotenv
+import requests
 
 load_dotenv()
 
@@ -432,26 +433,35 @@ def send_code():
     code = str(random.randint(100000, 999999))
     verification_codes[email] = {'code': code, 'time': time.time()}
     
-    sender = os.environ.get('SMTP_EMAIL')
-    password = os.environ.get('SMTP_PASSWORD')
+    api_key = os.environ.get('MAIL_API_KEY')
+    sender_email = "vidasanaoficial2026@gmail.com"
     
-    if sender and password:
+    if api_key:
         try:
-            msg = MIMEText(f"Bienvenido a Vida Sana.\n\nTu código de verificación es: {code}\nEste código expirará en 5 minutos.\n\nNo compartas este código con nadie.")
-            msg['Subject'] = 'Código de Verificación - Vida Sana'
-            msg['From'] = f"Vida Sana <{sender}>"
-            msg['To'] = email
-            server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
-            server.login(sender, password)
-            server.sendmail(sender, [email], msg.as_string())
-            server.quit()
-            print(f"\n[CORREO REAL ENVIADO] Código enviado a {email}\n")
-            return jsonify({'ok': True, 'method': 'real'})
+            url = "https://api.brevo.com/v3/smtp/email"
+            headers = {
+                "accept": "application/json",
+                "api-key": api_key,
+                "content-type": "application/json"
+            }
+            payload = {
+                "sender": {"name": "Vida Sana", "email": sender_email},
+                "to": [{"email": email}],
+                "subject": "Código de Verificación - Vida Sana",
+                "htmlContent": f"<p>Bienvenido a Vida Sana.</p><p>Tu código de verificación es: <b>{code}</b></p><p>Este código expirará en 5 minutos.</p><p>No compartas este código con nadie.</p>"
+            }
+            res = requests.post(url, json=payload, headers=headers)
+            if res.ok:
+                print(f"\n[BREVO API] Código enviado a {email}\n")
+                return jsonify({'ok': True, 'method': 'api'})
+            else:
+                print("Error de Brevo API:", res.text)
+                return jsonify({'error': 'Error de API al enviar el correo'}), 500
         except Exception as e:
-            print("Error enviando correo real:", e)
-            return jsonify({'error': 'Error al enviar el correo (verifica tus credenciales)'}), 500
+            print("Error enviando correo por API:", e)
+            return jsonify({'error': 'Error de conexión al enviar el correo'}), 500
     else:
-        # Fallback si no hay credenciales
+        # Fallback si no hay API key
         print("\n" + "="*60)
         print(f" [SIMULADOR CORREO] Enviando a: {email}")
         print(f" Código de verificación: {code}")

@@ -1266,17 +1266,18 @@ img { max-width: 100%; height: auto; }
   .why-section { flex-direction: column; }
   .footer-grid { grid-template-columns: 1fr 1fr; }
   .hero-text h1 { font-size: 2.2rem; }
-  .hero-images { display: none; }
+  .hero-content { flex-direction: column; text-align: center; gap: 20px; }
+  .hero-images { display: flex; justify-content: center; }
+  .hero-images img { height: 200px; }
 }
 @media (max-width: 576px) {
   .cat-grid { grid-template-columns: repeat(2, 1fr); }
   .tag-grid { grid-template-columns: repeat(2, 1fr); }
   .counter-grid { flex-direction: column; gap: 20px; }
   .footer-grid { grid-template-columns: 1fr; }
-  .hero-slide { min-height: 350px; padding: 30px 20px; }
+  .hero-slide { min-height: 500px; padding: 30px 20px; }
   .hero-text h1 { font-size: 1.8rem; }
-  .search-wrap input { width: 120px; }
-  .search-wrap input:focus { width: 160px; }
+  .hero-images img { height: 160px; }
 }
 /* NEW SHOP LAYOUT */
 .shop-section {

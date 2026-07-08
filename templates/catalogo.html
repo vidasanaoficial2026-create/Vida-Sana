@@ -1123,7 +1123,8 @@ img { max-width: 100%; height: auto; }
         <script>
           function openProfileModal(tab) {
              document.getElementById('myProfileDropdown').style.display = 'none';
-             document.getElementById('loginOverlay').style.display='flex';
+             document.getElementById('loginOverlay').style.display='';
+             document.getElementById('loginOverlay').classList.add('open');
              toggleAuthView('profile');
              showProfileTab(tab);
           }

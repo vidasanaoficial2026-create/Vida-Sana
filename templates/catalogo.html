@@ -948,6 +948,11 @@ img { max-width: 100%; height: auto; }
 @media (max-width: 992px) {
   .main-nav { display: none; }
   .main-nav.open { display: flex; flex-direction: column; position: absolute; top: 100%; left: 0; right: 0; background: var(--white); padding: 10px 0; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+  .nav-dropdown.mobile-open > .dropdown-content,
+  .nav-dropdown.mobile-open > .mega-menu-content {
+    opacity: 1; visibility: visible; position: static; transform: none; box-shadow: none; border: none; background: transparent; padding-left: 20px; display: flex; flex-direction: column;
+  }
+  .nav-dropdown > a.dropdown-title { display: flex; justify-content: space-between; align-items: center; }
   .mobile-toggle { display: block; }
 }
 @media (max-width: 900px) {
@@ -991,7 +996,7 @@ img { max-width: 100%; height: auto; }
     <nav class="main-nav" id="mainNav">
       <a href="/tienda">Inicio</a>
       <div class="nav-dropdown">
-        <a href="#" class="dropdown-title">Productos <i class="fas fa-chevron-down" style="font-size:10px;"></i></a>
+        <a href="#" class="dropdown-title" onclick="toggleMobileDropdown(event)">Productos <i class="fas fa-chevron-down" style="font-size:10px;"></i></a>
         <div class="dropdown-content">
           <div class="sub-dropdown">
             <a href="#" onclick="setCatalogCat(this)">Top Ventas <i class="fas fa-chevron-right" style="float:right; margin-top:4px; font-size:10px; color:#ccc;"></i></a>
@@ -1014,7 +1019,7 @@ img { max-width: 100%; height: auto; }
         </div>
       </div>
       <div class="nav-dropdown">
-        <a href="#" class="dropdown-title">Estilo de Vida <i class="fas fa-chevron-down" style="font-size:10px;"></i></a>
+        <a href="#" class="dropdown-title" onclick="toggleMobileDropdown(event)">Estilo de Vida <i class="fas fa-chevron-down" style="font-size:10px;"></i></a>
         <div class="mega-menu-content">
           <a href="#" onclick="setCatalogCat(this)" class="mega-menu-item">
             <div class="mega-menu-icon"><i class="fas fa-heartbeat"></i></div>
@@ -1366,6 +1371,13 @@ img { max-width: 100%; height: auto; }
 <div class="toast-msg" id="toastMsg"><i class="fas fa-check-circle"></i> <span id="toastText"></span></div>
 
 <script>
+function toggleMobileDropdown(e) {
+  if (window.innerWidth <= 992) {
+    e.preventDefault();
+    e.currentTarget.parentElement.classList.toggle('mobile-open');
+  }
+}
+
 // ─── State ────────────────────────────────────────────────────────────────────
 let cart = JSON.parse(localStorage.getItem('vidasana_cart') || '[]');
 let allProducts = [];

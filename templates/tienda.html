@@ -1258,6 +1258,11 @@ img { max-width: 100%; height: auto; }
 @media (max-width: 992px) {
   .main-nav { display: none; }
   .main-nav.open { display: flex; flex-direction: column; position: absolute; top: 100%; left: 0; right: 0; background: var(--white); padding: 10px 0; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+  .nav-dropdown.mobile-open > .dropdown-content,
+  .nav-dropdown.mobile-open > .mega-menu-content {
+    opacity: 1; visibility: visible; position: static; transform: none; box-shadow: none; border: none; background: transparent; padding-left: 20px; display: flex; flex-direction: column;
+  }
+  .nav-dropdown > a.dropdown-title { display: flex; justify-content: space-between; align-items: center; }
   .mobile-toggle { display: block; }
   .cat-grid { grid-template-columns: repeat(3, 1fr); }
   .cat-item img { height: 200px; }
@@ -1524,7 +1529,7 @@ img { max-width: 100%; height: auto; }
     <nav class="main-nav" id="mainNav">
       <a href="/tienda" class="active">Inicio</a>
       <div class="nav-dropdown">
-        <a href="#" class="dropdown-title">Productos <i class="fas fa-chevron-down" style="font-size:10px;"></i></a>
+        <a href="#" class="dropdown-title" onclick="toggleMobileDropdown(event)">Productos <i class="fas fa-chevron-down" style="font-size:10px;"></i></a>
         <div class="dropdown-content">
           <div class="sub-dropdown">
             <a href="#" onclick="filterCat('Top Ventas')">Top Ventas <i class="fas fa-chevron-right" style="float:right; margin-top:4px; font-size:10px; color:#ccc;"></i></a>
@@ -1536,18 +1541,18 @@ img { max-width: 100%; height: auto; }
           <a href="#" onclick="filterCat('Aceites')">Aceites</a>
           <a href="#" onclick="filterCat('Bebidas y concentrados')">Bebidas y concentrados <i class="fas fa-chevron-right" style="float:right; margin-top:4px; font-size:10px; color:#ccc;"></i></a>
           <a href="#" onclick="filterCat('Cocina Natural')">Cocina Natural <i class="fas fa-chevron-right" style="float:right; margin-top:4px; font-size:10px; color:#ccc;"></i></a>
-          <a href="#" onclick="filterCat('ColÃ¡genos')">ColÃ¡genos</a>
+          <a href="#" onclick="filterCat('Colágenos')">Colágenos</a>
           <a href="#" onclick="filterCat('Cuidado del cabello')">Cuidado del cabello</a>
           <a href="#" onclick="filterCat('Frotaciones')">Frotaciones</a>
           <a href="#" onclick="filterCat('Jarabes naturales')">Jarabes naturales <i class="fas fa-chevron-right" style="float:right; margin-top:4px; font-size:10px; color:#ccc;"></i></a>
-          <a href="#" onclick="filterCat('PropÃ³leos')">PropÃ³leos</a>
+          <a href="#" onclick="filterCat('Propóleos')">Propóleos</a>
           <a href="#" onclick="filterCat('Refuerzos')">Refuerzos <i class="fas fa-chevron-right" style="float:right; margin-top:4px; font-size:10px; color:#ccc;"></i></a>
           <a href="#" onclick="filterCat('Packs')">Packs <i class="fas fa-chevron-right" style="float:right; margin-top:4px; font-size:10px; color:#ccc;"></i></a>
           <a href="#" onclick="loadProducts(''); scrollToId('productos');">Ver Todos los Productos</a>
         </div>
       </div>
       <div class="nav-dropdown">
-        <a href="#" class="dropdown-title">Estilo de Vida <i class="fas fa-chevron-down" style="font-size:10px;"></i></a>
+        <a href="#" class="dropdown-title" onclick="toggleMobileDropdown(event)">Estilo de Vida <i class="fas fa-chevron-down" style="font-size:10px;"></i></a>
         <div class="mega-menu-content">
           <a href="#" onclick="filterCat('Para el Estómago')" class="mega-menu-item">
             <div class="mega-menu-icon"><i class="fas fa-apple-alt"></i></div>
@@ -1939,6 +1944,12 @@ img { max-width: 100%; height: auto; }
 <div class="toast-msg" id="toastMsg"><i class="fas fa-check-circle"></i> <span id="toastText"></span></div>
 
 <script>
+function toggleMobileDropdown(e) {
+  if (window.innerWidth <= 992) {
+    e.preventDefault();
+    e.currentTarget.parentElement.classList.toggle('mobile-open');
+  }
+}
 const API = '';
 let cart = JSON.parse(localStorage.getItem('vid sana_cart') || '[]');
 let allProducts = [];

@@ -955,9 +955,24 @@ img { max-width: 100%; height: auto; }
   .shop-sidebar { width: 100%; }
   .shop-grid { grid-template-columns: repeat(2, 1fr); }
 }
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
 @media (max-width: 600px) {
   .shop-grid { grid-template-columns: 1fr; }
   .footer-grid { grid-template-columns: 1fr; }
+  .header-inner { flex-wrap: wrap; }
+  .header-actions {
+    width: 100%;
+    margin-top: 10px;
+  }
+  .search-wrap {
+    flex: 1;
+    margin-right: 10px;
+  }
+  .search-wrap input { width: 100% !important; max-width: none; }
 }
 .hidden-form { display: none !important; }
 </style>
@@ -1030,7 +1045,7 @@ img { max-width: 100%; height: auto; }
       <a href="/catalogo" class="active">Catálogo</a>
       <a href="#contacto">Contacto</a>
     </nav>
-    <div style="display:flex;align-items:center;gap:4px">
+    <div class="header-actions">
       <div class="search-wrap">
         <input type="text" id="searchInput" placeholder="Buscar productos ..." onkeyup="filterProducts(event)">
         <button onclick="filterProducts()"><i class="fas fa-search"></i></button>

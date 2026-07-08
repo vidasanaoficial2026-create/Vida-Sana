@@ -670,6 +670,30 @@ img { max-width: 100%; height: auto; display: block; }
   .features { padding: 60px 16px; }
   .about { padding: 60px 16px; }
   .cta { padding: 60px 16px; }
+  .promo-modal {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.7); z-index: 9999;
+    display: none; align-items: center; justify-content: center;
+    backdrop-filter: blur(5px);
+  }
+  .promo-modal.active { display: flex; }
+  .promo-modal-content {
+    position: relative; max-width: 90%; max-height: 90vh;
+    border-radius: 12px; overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    animation: zoomIn 0.3s ease;
+  }
+  .promo-modal-content img {
+    display: block; width: 100%; max-width: 900px; max-height: 90vh; object-fit: contain;
+  }
+  .promo-modal-close {
+    position: absolute; top: 15px; right: 15px; width: 40px; height: 40px;
+    background: rgba(0,0,0,0.5); color: white; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; cursor: pointer; border: none; transition: 0.3s;
+  }
+  .promo-modal-close:hover { background: rgba(0,0,0,0.8); }
+  @keyframes zoomIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 }
 </style>
 </head>
@@ -881,6 +905,15 @@ img { max-width: 100%; height: auto; display: block; }
 <!-- TOAST -->
 <div class="toast-msg" id="toastMsg"><i class="fas fa-check-circle"></i> <span id="toastText"></span></div>
 
+<div class="promo-modal" id="promoModal" onclick="if(event.target===this) closePromoModal()">
+  <div class="promo-modal-content">
+    <button class="promo-modal-close" onclick="closePromoModal()"><i class="fas fa-times"></i></button>
+    <a href="/catalogo" onclick="closePromoModal()">
+      <img src="https://www.4mnature.com/img/lanzamiento.jpg" alt="Lanzamiento Oficial Colágeno">
+    </a>
+  </div>
+</div>
+
 <script>
 // Mobile nav toggle
 document.getElementById('mobileToggle').addEventListener('click', () => {
@@ -1013,6 +1046,18 @@ function showToast(msg) {
 fetchAllProducts().then(() => {
   updateCartCount();
   loadFeatured();
+});
+
+function closePromoModal() {
+  document.getElementById('promoModal').classList.remove('active');
+}
+window.addEventListener('load', () => {
+  if (!sessionStorage.getItem('promoShown')) {
+    setTimeout(() => {
+      document.getElementById('promoModal').classList.add('active');
+      sessionStorage.setItem('promoShown', 'true');
+    }, 1500); // Muestra el modal despus de 1.5s
+  }
 });
 </script>
 </body>

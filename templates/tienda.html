@@ -2334,6 +2334,7 @@ function toggleAuthView(view) {
 
   // Ocultar todos primero usando clase y estilo por seguridad
   document.getElementById('loginForm').style.display = 'none';
+  if(document.getElementById('profileView')) document.getElementById('profileView').style.display = 'none';
   document.getElementById('registerForm').style.display = 'none';
   if(document.getElementById('forgotForm')) document.getElementById('forgotForm').style.display = 'none';
   
@@ -2348,6 +2349,12 @@ function toggleAuthView(view) {
     if(document.getElementById('forgotForm')) {
       document.getElementById('forgotForm').classList.remove('hidden-form');
       document.getElementById('forgotForm').style.display = 'block';
+    }
+  } else if (view === 'profile') {
+    if(document.getElementById('profileView')) {
+      document.getElementById('profileView').style.display = 'block';
+      loadPedidos();
+      loadFavoritosProfile();
     }
   } else {
     document.getElementById('loginForm').classList.remove('hidden-form');

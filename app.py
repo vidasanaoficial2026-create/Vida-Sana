@@ -7,6 +7,9 @@ import os
 import sys
 import re
 from datetime import datetime
+import uuid
+
+SESSIONS = {}
 
 DB_PATH = os.path.join(os.path.dirname(__file__), 'natura.db')
 SECRET = 'natura-admin-secret-2026'
@@ -63,6 +66,16 @@ def init_db():
             fecha_registro TEXT DEFAULT (datetime('now','-5 hours'))
         );
     ''')
+    conn.executescript('''
+        CREATE TABLE IF NOT EXISTS ventas (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            producto_id INTEGER NOT NULL,
+            cantidad INTEGER NOT NULL,
+            total REAL NOT NULL,
+            fecha TEXT DEFAULT (datetime('now','-5 hours')),
+            FOREIGN KEY(producto_id) REFERENCES productos(id)
+        );
+    ''')
     cur = conn.execute("SELECT COUNT(*) FROM productos")
     if cur.fetchone()[0] == 0:
         sample = [
@@ -97,26 +110,50 @@ class APIHandler(http.server.BaseHTTPRequestHandler):
     def log_message(self, format, *args):
         pass
 
-    def _send_json(self, data, status=200):
+    def _send_json(self, data, status=200, cookie=None):
+        body = json.dumps(data, ensure_ascii=False).encode('utf-8')
         self.send_response(status)
         self.send_header('Content-Type', 'application/json')
+        self.send_header('Content-Length', str(len(body)))
+        self.send_header('Connection', 'close')
         self.send_header('Access-Control-Allow-Origin', '*')
         self.send_header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
         self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+        if cookie:
+            self.send_header('Set-Cookie', cookie)
         self.end_headers()
-        self.wfile.write(json.dumps(data, ensure_ascii=False).encode())
+        self.wfile.write(body)
 
     def do_OPTIONS(self):
         self.send_response(200)
         self.send_header('Access-Control-Allow-Origin', '*')
         self.send_header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
         self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+        self.send_header('Connection', 'close')
         self.end_headers()
+
+    def _check_auth(self):
+        cookie_header = self.headers.get('Cookie')
+        if not cookie_header: return False
+        for cookie in cookie_header.split(';'):
+            cookie = cookie.strip()
+            if cookie.startswith('session_id='):
+                token = cookie.split('=')[1]
+                if token in SESSIONS:
+                    return True
+        return False
 
     def _send_static(self, path):
         try:
             if path == '/' or path == '':
                 path = '/index.html'
+
+            if path in ['/index.html', '/admin_productos.html']:
+                if not self._check_auth():
+                    self.send_response(302)
+                    self.send_header('Location', '/login.html')
+                    self.end_headers()
+                    return
             filepath = os.path.join(os.path.dirname(__file__), path.lstrip('/'))
             if not os.path.exists(filepath) or not os.path.isfile(filepath):
                 self.send_error(404)
@@ -138,6 +175,8 @@ class APIHandler(http.server.BaseHTTPRequestHandler):
                 content = f.read()
             self.send_response(200)
             self.send_header('Content-Type', content_type)
+            self.send_header('Content-Length', str(len(content)))
+            self.send_header('Connection', 'close')
             self.end_headers()
             self.wfile.write(content)
         except Exception as e:
@@ -179,6 +218,22 @@ class APIHandler(http.server.BaseHTTPRequestHandler):
             self._send_static(path)
 
     def _handle_api_get(self, path, query):
+        protected_routes = ['/api/ventas/stats', '/api/workers', '/api/workers/count']
+        is_protected = any(path.startswith(r) for r in protected_routes)
+        if is_protected and not self._check_auth():
+            self._send_json({'error': 'No autorizado'}, 401)
+            return
+
+        if path == '/api/ventas/stats':
+            conn = get_db()
+            ingresos = conn.execute("SELECT COALESCE(SUM(total), 0) FROM ventas").fetchone()[0]
+            ventas_totales = conn.execute("SELECT COUNT(*) FROM ventas").fetchone()[0]
+            productos_activos = conn.execute("SELECT COUNT(*) FROM productos").fetchone()[0]
+            bajo_stock = conn.execute("SELECT COUNT(*) FROM productos WHERE stock <= 5").fetchone()[0]
+            conn.close()
+            self._send_json({'ok': True, 'ingresos': ingresos, 'ventasTotales': ventas_totales, 'productosActivos': productos_activos, 'bajoStock': bajo_stock})
+            return
+
         if path == '/api/workers':
             conn = get_db()
             search = query.get('search', [''])[0]
@@ -216,10 +271,17 @@ class APIHandler(http.server.BaseHTTPRequestHandler):
         if path == '/api/productos':
             conn = get_db()
             cat = query.get('categoria', [''])[0]
+            q = query.get('q', [''])[0]
+            sql = "SELECT * FROM productos WHERE 1=1"
+            params = []
             if cat:
-                rows = conn.execute("SELECT * FROM productos WHERE categoria=? ORDER BY destacado DESC, id DESC", (cat,)).fetchall()
-            else:
-                rows = conn.execute("SELECT * FROM productos ORDER BY destacado DESC, id DESC").fetchall()
+                sql += " AND categoria=?"
+                params.append(cat)
+            if q:
+                sql += " AND (nombre LIKE ? OR descripcion LIKE ? OR categoria LIKE ?)"
+                params.extend([f'%{q}%', f'%{q}%', f'%{q}%'])
+            sql += " ORDER BY destacado DESC, id DESC"
+            rows = conn.execute(sql, params).fetchall()
             conn.close()
             productos = [dict(r) for r in rows]
             self._send_json({'ok': True, 'productos': productos})
@@ -241,9 +303,67 @@ class APIHandler(http.server.BaseHTTPRequestHandler):
     def do_POST(self):
         parsed = urllib.parse.urlparse(self.path)
         path = parsed.path.rstrip('/')
+        body = self._parse_body()
+
+        if path == '/api/login':
+            username = body.get('username', '')
+            password = body.get('password', '')
+            conn = get_db()
+            row = conn.execute("SELECT * FROM usuarios WHERE username=?", (username,)).fetchone()
+            conn.close()
+            if row:
+                expected_pw = row['password']
+                # Check plaintext for root admin or hashed for others
+                if password == expected_pw or hashlib.sha256(f'{password}{SECRET}'.encode()).hexdigest() == expected_pw:
+                    token = str(uuid.uuid4())
+                    SESSIONS[token] = row['id']
+                    self._send_json({'ok': True}, 200, cookie=f'session_id={token}; Path=/')
+                    return
+            self._send_json({'error': 'Credenciales inválidas'}, 401)
+            return
+
+        if path == '/api/logout':
+            cookie_header = self.headers.get('Cookie')
+            if cookie_header:
+                for cookie in cookie_header.split(';'):
+                    cookie = cookie.strip()
+                    if cookie.startswith('session_id='):
+                        token = cookie.split('=')[1]
+                        if token in SESSIONS:
+                            del SESSIONS[token]
+            self._send_json({'ok': True}, 200, cookie='session_id=; Path=/; Max-Age=0')
+            return
+
+        protected_routes = ['/api/ventas', '/api/workers', '/api/productos']
+        is_protected = any(path.startswith(r) for r in protected_routes)
+        if is_protected and not self._check_auth():
+            self._send_json({'error': 'No autorizado'}, 401)
+            return
+
+        if path == '/api/ventas':
+            conn = get_db()
+            try:
+                pid = body['producto_id']
+                qty = int(body.get('cantidad', 1))
+                row = conn.execute("SELECT precio, stock FROM productos WHERE id=?", (pid,)).fetchone()
+                if not row:
+                    self._send_json({'error': 'Producto no encontrado'}, 404)
+                    return
+                if row['stock'] < qty:
+                    self._send_json({'error': 'Stock insuficiente'}, 400)
+                    return
+                total = row['precio'] * qty
+                conn.execute("INSERT INTO ventas (producto_id, cantidad, total) VALUES (?,?,?)", (pid, qty, total))
+                conn.execute("UPDATE productos SET stock = stock - ? WHERE id=?", (qty, pid))
+                conn.commit()
+                conn.close()
+                self._send_json({'ok': True, 'total': total, 'cantidad': qty}, 201)
+            except Exception as e:
+                conn.close()
+                self._send_json({'error': str(e)}, 400)
+            return
 
         if path == '/api/workers':
-            body = self._parse_body()
             conn = get_db()
             try:
                 uname = next_username(conn)
@@ -270,7 +390,6 @@ class APIHandler(http.server.BaseHTTPRequestHandler):
             return
 
         if path == '/api/productos':
-            body = self._parse_body()
             conn = get_db()
             try:
                 conn.execute(
@@ -293,6 +412,10 @@ class APIHandler(http.server.BaseHTTPRequestHandler):
     def do_PUT(self):
         parsed = urllib.parse.urlparse(self.path)
         path = parsed.path.rstrip('/')
+
+        if not self._check_auth():
+            self._send_json({'error': 'No autorizado'}, 401)
+            return
 
         if path.startswith('/api/productos/'):
             pid = path.split('/')[-1]
@@ -350,6 +473,10 @@ class APIHandler(http.server.BaseHTTPRequestHandler):
     def do_DELETE(self):
         parsed = urllib.parse.urlparse(self.path)
         path = parsed.path.rstrip('/')
+
+        if not self._check_auth():
+            self._send_json({'error': 'No autorizado'}, 401)
+            return
 
         if path.startswith('/api/productos/'):
             pid = path.split('/')[-1]

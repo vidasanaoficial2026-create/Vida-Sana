@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vida Sana - Login</title>
+<link rel="icon" href="{{ url_for('static', filename='img/LOGO.png') }}" type="image/png">
+<meta name="theme-color" content="#05c108">
+<link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<style>
+:root {
+  --primary-color: #1e5631;
+  --secu-color: #01c000;
+  --text-color: #333;
+}
+* { box-sizing: border-box; }
+body {
+  font-family: 'Poppins', sans-serif;
+  color: var(--text-color);
+  background: #f8f9fa;
+  margin: 0;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.login-wrap {
+  background: #fff;
+  padding: 40px;
+  border-radius: 16px;
+  box-shadow: 0 15px 40px rgba(0,0,0,0.1);
+  width: 100%;
+  max-width: 400px;
+  text-align: center;
+}
+.login-wrap img {
+  height: 70px;
+  margin-bottom: 24px;
+}
+.login-wrap h1 {
+  font-size: 22px;
+  color: var(--primary-color);
+  margin: 0 0 8px;
+}
+.login-wrap p {
+  color: #666;
+  font-size: 14px;
+  margin: 0 0 24px;
+}
+.field {
+  text-align: left;
+  margin-bottom: 16px;
+}
+.field label {
+  display: block;
+  font-weight: 500;
+  font-size: 13px;
+  margin-bottom: 6px;
+  color: #555;
+}
+.field input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1.5px solid #dee2e6;
+  border-radius: 8px;
+  font-size: 14px;
+  outline: none;
+  background: #f8f9fa;
+  font-family: 'Poppins', sans-serif;
+}
+.field input:focus {
+  border-color: var(--secu-color);
+  background: #fff;
+}
+.btn-login {
+  background: var(--primary-color);
+  color: #fff;
+  border: none;
+  padding: 12px;
+  width: 100%;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 10px;
+}
+.btn-login:hover {
+  background: #143d23;
+}
+.error-msg {
+  color: #dc3545;
+  font-size: 13px;
+  margin-top: 12px;
+  display: none;
+}
+</style>
+</head>
+<body>
+
+<div class="login-wrap">
+  <img src="{{ url_for('static', filename='img/LOGO.png') }}" alt="Vida Sana" style="height: 90px; border-radius: 8px;">
+  <h1>Portal Administrativo</h1>
+  <p>Inicia sesión para gestionar el sistema</p>
+  
+  <form id="loginForm" onsubmit="doLogin(event)">
+    <div class="field">
+      <label>Usuario o DNI</label>
+      <input type="text" id="username" placeholder="Ingresa tu usuario o DNI" required>
+    </div>
+    <div class="field">
+      <label>Contraseña</label>
+      <input type="password" id="password" placeholder="••••••••" required>
+    </div>
+    <div class="error-msg" id="errorMsg">Credenciales inválidas</div>
+    <button type="submit" class="btn-login" id="btnSubmit">INICIAR SESIÓN</button>
+  </form>
+</div>
+
+<script>
+async function doLogin(e) {
+  e.preventDefault();
+  const btn = document.getElementById('btnSubmit');
+  const err = document.getElementById('errorMsg');
+  
+  btn.disabled = true;
+  btn.textContent = 'Cargando...';
+  err.style.display = 'none';
+  
+  const u = document.getElementById('username').value;
+  const p = document.getElementById('password').value;
+  
+  try {
+    const res = await fetch('/api/login', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({username: u, password: p})
+    });
+    
+    if (res.ok) {
+      window.location.href = '/';
+    } else {
+      err.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = 'INICIAR SESIÓN';
+    }
+  } catch(e) {
+    err.textContent = 'Error de conexión';
+    err.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'INICIAR SESIÓN';
+  }
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,1018 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vida Sana — Productos Naturales</title>
+<link rel="icon" href="https://www.4mnature.com/img/logo4M.png" type="image/png">
+<meta name="theme-color" content="#0f3d20">
+<link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --green-900: #0f3d20;
+  --green-700: #1e5631;
+  --green-500: #2e7d32;
+  --green-300: #4caf50;
+  --green-100: #a5d6a7;
+  --green-50: #e8f5e9;
+  --gold: #c8a84e;
+  --gold-light: #f5e7c8;
+  --cream: #f7f5e7;
+  --dark: #1a1a2e;
+  --text: #3a3a3a;
+  --text-light: #6c757d;
+  --white: #fff;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+  --shadow-md: 0 4px 20px rgba(0,0,0,0.08);
+  --shadow-lg: 0 20px 60px rgba(0,0,0,0.12);
+  --radius: 16px;
+}
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Outfit', sans-serif;
+  color: var(--text);
+  background: var(--white);
+  overflow-x: hidden;
+  line-height: 1.6;
+}
+a { text-decoration: none; color: inherit; }
+img { max-width: 100%; height: auto; display: block; }
+
+/* HEADER */
+.header {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 1000;
+  padding: 16px 24px;
+  transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+  background: transparent;
+}
+.header.scrolled {
+  background: rgba(255,255,255,0.92);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  padding: 10px 24px;
+  box-shadow: 0 1px 20px rgba(0,0,0,0.06);
+}
+.header-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 800;
+  font-size: 22px;
+  color: var(--white);
+  transition: color 0.3s;
+}
+.header.scrolled .logo { color: var(--green-700); }
+.logo span { color: var(--gold); }
+.logo-img { height: 60px; width: auto; border-radius: 8px; }
+.nav { display: flex; align-items: center; gap: 8px; }
+.nav a {
+  padding: 8px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.85);
+  border-radius: 10px;
+  transition: all 0.25s;
+  position: relative;
+}
+.header.scrolled .nav a { color: var(--text); }
+.nav a:hover { background: rgba(255,255,255,0.12); color: var(--white); }
+.header.scrolled .nav a:hover { background: var(--green-50); color: var(--green-700); }
+.nav .btn-nav {
+  background: var(--gold);
+  color: var(--dark) !important;
+  padding: 8px 22px;
+  font-weight: 700;
+}
+.nav .btn-nav:hover { background: #b8942e; transform: translateY(-1px); }
+.mobile-toggle {
+  display: none;
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: var(--white);
+  cursor: pointer;
+  padding: 4px;
+  transition: color 0.3s;
+}
+.header.scrolled .mobile-toggle { color: var(--green-700); }
+
+/* HERO */
+.hero {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  position: relative;
+  background: linear-gradient(135deg, var(--green-900) 0%, var(--green-700) 40%, var(--green-500) 100%);
+  overflow: hidden;
+}
+.hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  pointer-events: none;
+}
+.hero-bg-circle {
+  position: absolute;
+  border-radius: 50%;
+  opacity: 0.06;
+  background: var(--white);
+}
+.hero-bg-circle.c1 { width: 500px; height: 500px; top: -150px; right: -100px; }
+.hero-bg-circle.c2 { width: 300px; height: 300px; bottom: -80px; left: -80px; }
+.hero-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 120px 24px 80px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 60px;
+  align-items: center;
+  width: 100%;
+  position: relative;
+  z-index: 1;
+}
+.hero-text { }
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: linear-gradient(135deg, rgba(255,255,255,0.2), rgba(255,255,255,0.05));
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.4);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  padding: 8px 20px 8px 8px;
+  border-radius: 50px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 24px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.hero-badge .icon {
+  width: 34px; height: 34px;
+  background: linear-gradient(135deg, #a3e635, #4ade80);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--green-900);
+  font-size: 14px;
+  box-shadow: 0 2px 8px rgba(74,222,128,0.4);
+}
+.hero h1 {
+  font-size: clamp(2.5rem, 5vw, 4.2rem);
+  font-weight: 900;
+  line-height: 1.05;
+  color: var(--white);
+  margin-bottom: 16px;
+}
+.hero h1 span {
+  background: linear-gradient(135deg, #a3e635, #4ade80);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.hero p {
+  font-size: 1.1rem;
+  color: rgba(255,255,255,0.75);
+  max-width: 480px;
+  margin-bottom: 32px;
+  line-height: 1.7;
+}
+.hero-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: #ffffff;
+  color: var(--green-900);
+  border: none;
+  padding: 14px 32px;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 15px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  font-family: 'Outfit', sans-serif;
+}
+.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(255,255,255,0.3); background: #f8f9fa; }
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255,255,255,0.1);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.2);
+  color: var(--white);
+  padding: 14px 32px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+  transition: all 0.3s;
+  font-family: 'Outfit', sans-serif;
+}
+.btn-secondary:hover { background: rgba(255,255,255,0.18); }
+.hero-image-wrap {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+}
+.hero-image-wrap img {
+  max-height: 500px;
+  object-fit: contain;
+  filter: drop-shadow(0 20px 60px rgba(0,0,0,0.25));
+  animation: float 6s ease-in-out infinite;
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-16px); }
+}
+.floating-badge {
+  position: absolute;
+  background: rgba(255,255,255,0.95);
+  backdrop-filter: blur(12px);
+  border-radius: 14px;
+  padding: 12px 18px;
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  animation: float 5s ease-in-out infinite;
+  animation-delay: -2s;
+}
+.floating-badge.b1 { top: 10%; right: 0; }
+.floating-badge.b2 { bottom: 15%; left: 0; animation-delay: -4s; }
+.floating-badge .fb-icon {
+  width: 40px; height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+}
+.floating-badge .fb-icon.green { background: var(--green-50); color: var(--green-700); }
+.floating-badge .fb-icon.gold { background: var(--gold-light); color: #8a6e1e; }
+.floating-badge .fb-text { }
+.floating-badge .fb-text strong { display: block; font-size: 14px; color: var(--text); }
+.floating-badge .fb-text span { font-size: 12px; color: var(--text-light); }
+
+/* SECTION COMMON */
+.section {
+  padding: 100px 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+.section-header {
+  text-align: center;
+  margin-bottom: 56px;
+}
+.section-header .label {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--green-500);
+  margin-bottom: 10px;
+}
+.section-header h2 {
+  font-size: clamp(1.8rem, 3.5vw, 2.8rem);
+  font-weight: 800;
+  color: var(--dark);
+  margin-bottom: 12px;
+  line-height: 1.15;
+}
+.section-header h2 span { color: var(--green-500); }
+.section-header p {
+  color: var(--text-light);
+  font-size: 1.05rem;
+  max-width: 540px;
+  margin: 0 auto;
+}
+
+/* FEATURES */
+.features { background: var(--cream); padding: 100px 24px; }
+.features-inner { max-width: 1200px; margin: 0 auto; }
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 28px;
+}
+.feature-card {
+  background: var(--white);
+  border-radius: 20px;
+  padding: 40px 32px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.03);
+  transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  border: 1px solid rgba(0,0,0,0.05);
+  position: relative;
+  overflow: hidden;
+  z-index: 1;
+  text-align: center;
+}
+.feature-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(163,230,53,0.08) 0%, rgba(255,255,255,0) 100%);
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  z-index: -1;
+}
+.feature-card:hover::before { opacity: 1; }
+.feature-card:hover { 
+  transform: translateY(-12px); 
+  box-shadow: 0 25px 60px rgba(74,222,128,0.12); 
+  border-color: rgba(163,230,53,0.3);
+}
+.feature-image {
+  width: 96px; height: 96px;
+  border-radius: 50%;
+  margin: 0 auto 24px auto;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+  border: 4px solid var(--white);
+  position: relative;
+  transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.5s ease;
+  flex-shrink: 0;
+}
+.feature-image img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  transition: transform 0.6s ease;
+}
+.feature-card:hover .feature-image {
+  transform: translateY(-8px) scale(1.05);
+  box-shadow: 0 15px 35px rgba(74,222,128,0.25);
+}
+.feature-card:hover .feature-image img {
+  transform: scale(1.15) rotate(3deg);
+}
+.feature-card h3 { font-size: 20px; font-weight: 800; margin-bottom: 12px; color: var(--dark); letter-spacing: -0.3px; }
+.feature-card p { font-size: 15px; color: var(--text-light); line-height: 1.7; }
+
+/* PRODUCTS */
+.products-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 24px;
+}
+.prod-card {
+  background: var(--white);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid rgba(0,0,0,0.04);
+  transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+  position: relative;
+}
+.prod-card:hover { transform: translateY(-6px); box-shadow: var(--shadow-md); }
+.prod-card-image {
+  height: 220px;
+  background: var(--cream);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+}
+.prod-card-image img {
+  max-height: 100%;
+  max-width: 100%;
+  object-fit: contain;
+  transition: transform 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+.prod-card:hover .prod-card-image img { transform: scale(1.08); }
+.prod-card-body { padding: 20px 20px 24px; }
+.prod-card-body .category {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--green-500);
+  margin-bottom: 4px;
+}
+.prod-card-body h3 { font-size: 17px; font-weight: 700; color: var(--dark); margin-bottom: 4px; }
+.prod-card-body .price {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--green-700);
+  margin-bottom: 14px;
+}
+.prod-card-body .price small { font-size: 14px; font-weight: 600; color: var(--text-light); }
+.prod-card-actions { display: flex; gap: 8px; }
+.btn-add {
+  flex: 1;
+  background: var(--green-700);
+  color: var(--white);
+  border: none;
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.25s;
+  font-family: 'Outfit', sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.btn-add:hover { background: var(--green-900); }
+.btn-add:disabled { opacity: 0.4; cursor: not-allowed; background: #999; }
+.btn-wsp {
+  width: 42px;
+  background: #25d366;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: all 0.25s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.btn-wsp:hover { background: #1ebe5c; }
+/* Loading / error state for products */
+.prod-loading, .prod-error { grid-column: 1 / -1; text-align: center; padding: 60px 20px; color: var(--text-light); }
+.prod-loading .spinner { display: inline-block; width: 36px; height: 36px; border: 3px solid var(--green-100); border-top-color: var(--green-700); border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.view-all-wrap { text-align: center; margin-top: 40px; }
+.btn-outline {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  color: var(--green-700);
+  border: 2px solid var(--green-700);
+  padding: 12px 30px;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s;
+  font-family: 'Outfit', sans-serif;
+}
+.btn-outline:hover { background: var(--green-700); color: var(--white); }
+
+/* ABOUT */
+.about { background: var(--green-900); padding: 100px 24px; color: var(--white); }
+.about-inner { max-width: 1200px; margin: 0 auto; }
+.about-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 60px;
+  align-items: center;
+}
+.about-image { text-align: center; }
+.about-image img { max-height: 420px; object-fit: contain; filter: drop-shadow(0 10px 40px rgba(0,0,0,0.3)); }
+.about-text h2 { font-size: clamp(1.6rem, 3vw, 2.4rem); font-weight: 800; margin-bottom: 20px; line-height: 1.15; }
+.about-text h2 span { color: var(--gold); }
+.about-text p { color: rgba(255,255,255,0.7); margin-bottom: 24px; line-height: 1.8; font-size: 15px; }
+.about-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+.stat-item { text-align: center; }
+.stat-item .num { font-size: 2rem; font-weight: 900; color: var(--gold); }
+.stat-item .label { font-size: 13px; color: rgba(255,255,255,0.6); font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
+
+/* TESTIMONIALS */
+.testimonials-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 24px;
+}
+.testimonial-card {
+  background: var(--white);
+  border-radius: var(--radius);
+  padding: 32px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid rgba(0,0,0,0.04);
+  transition: all 0.3s;
+}
+.testimonial-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); }
+.testimonial-stars { color: var(--gold); font-size: 14px; margin-bottom: 14px; }
+.testimonial-card > p { font-size: 14px; color: var(--text); line-height: 1.7; margin-bottom: 20px; font-style: italic; }
+.testimonial-author { display: flex; align-items: center; gap: 12px; }
+.testimonial-author .avatar {
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  background: var(--green-50);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: var(--green-700);
+  font-size: 16px;
+}
+.testimonial-author .info strong { display: block; font-size: 14px; color: var(--dark); }
+.testimonial-author .info span { font-size: 12px; color: var(--text-light); }
+
+/* CTA */
+.cta {
+  padding: 100px 24px;
+  background: linear-gradient(135deg, var(--green-700), var(--green-500));
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.cta::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  pointer-events: none;
+}
+.cta-inner { max-width: 600px; margin: 0 auto; position: relative; z-index: 1; }
+.cta h2 { font-size: clamp(1.8rem, 3vw, 2.5rem); font-weight: 800; color: var(--white); margin-bottom: 12px; }
+.cta p { color: rgba(255,255,255,0.8); margin-bottom: 28px; font-size: 1.05rem; }
+.cta .btn-primary { font-size: 16px; padding: 16px 40px; }
+
+/* FOOTER */
+.footer {
+  background: var(--green-900);
+  color: rgba(255,255,255,0.85);
+  padding: 60px 24px 0;
+}
+.footer-inner { max-width: 1200px; margin: 0 auto; }
+.footer-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  gap: 40px;
+  padding-bottom: 40px;
+}
+.footer-brand { font-size: 22px; font-weight: 800; color: var(--white); margin-bottom: 12px; }
+.footer-brand span { color: var(--green-300); }
+.footer-desc { font-size: 14px; color: rgba(255,255,255,0.55); line-height: 1.7; margin-bottom: 20px; }
+.footer-social { display: flex; gap: 10px; }
+.footer-social a {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255,255,255,0.7);
+  font-size: 16px;
+  transition: all 0.3s;
+}
+.footer-social a:hover { background: var(--green-300); color: var(--white); }
+.footer-col h5 { color: var(--white); font-weight: 700; font-size: 15px; margin-bottom: 18px; text-transform: uppercase; letter-spacing: 1px; }
+.footer-col ul { list-style: none; }
+.footer-col ul li { margin-bottom: 10px; }
+.footer-col ul li a { color: rgba(255,255,255,0.55); font-size: 14px; transition: color 0.2s; }
+.footer-col ul li a:hover { color: var(--green-100); padding-left: 5px; }
+.footer-col p { font-size: 14px; color: rgba(255,255,255,0.7); margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+.footer-col p i { color: var(--green-300); width: 16px; }
+.footer-bar {
+  border-top: 1px solid rgba(255,255,255,0.06);
+  padding: 20px 0;
+  text-align: center;
+  font-size: 13px;
+  color: rgba(255,255,255,0.35);
+}
+
+/* WHATSAPP */
+.whatsapp-float {
+  position: fixed;
+  bottom: 20px; right: 20px;
+  z-index: 999;
+  width: 56px; height: 56px;
+  background: #25d366;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 28px;
+  box-shadow: 0 4px 20px rgba(37,211,102,0.4);
+  transition: all 0.3s;
+  cursor: pointer;
+  animation: pulse 2s infinite;
+}
+@keyframes pulse { 0% { box-shadow: 0 4px 20px rgba(37,211,102,0.4); } 50% { box-shadow: 0 4px 30px rgba(37,211,102,0.6); } 100% { box-shadow: 0 4px 20px rgba(37,211,102,0.4); } }
+.whatsapp-float:hover { transform: scale(1.1); color: #fff; }
+
+/* TOAST */
+.toast-msg {
+  position: fixed; bottom: 90px; right: 20px;
+  background: var(--green-700); color: #fff;
+  padding: 12px 20px; border-radius: 12px;
+  font-weight: 600; font-size: 14px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  z-index: 10000;
+  display: flex; align-items: center; gap: 8px;
+  transform: translateY(20px); opacity: 0;
+  transition: all 0.3s ease;
+  font-family: 'Outfit', sans-serif;
+}
+.toast-msg.show { transform: translateY(0); opacity: 1; }
+
+/* SCROLL ANIMATIONS */
+.reveal {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: all 0.6s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+.reveal.visible { opacity: 1; transform: translateY(0); }
+.reveal-delay-1 { transition-delay: 0.1s; }
+.reveal-delay-2 { transition-delay: 0.2s; }
+.reveal-delay-3 { transition-delay: 0.3s; }
+.reveal-delay-4 { transition-delay: 0.4s; }
+
+/* RESPONSIVE */
+@media (max-width: 992px) {
+  .hero-inner { grid-template-columns: 1fr; text-align: center; padding-top: 100px; gap: 40px; }
+  .hero p { margin: 0 auto 32px; }
+  .hero-actions { justify-content: center; }
+  .hero-image-wrap img { max-height: 340px; }
+  .floating-badge { display: none; }
+  .features-grid { grid-template-columns: 1fr 1fr; }
+  .about-grid { grid-template-columns: 1fr; gap: 40px; text-align: center; }
+  .about-stats { justify-items: center; }
+  .footer-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 768px) {
+  .nav { display: none; }
+  .nav.open { display: flex; flex-direction: column; position: absolute; top: 100%; left: 0; right: 0; background: rgba(255,255,255,0.98); backdrop-filter: blur(16px); padding: 16px; box-shadow: var(--shadow-md); border-radius: 0 0 16px 16px; }
+  .nav.open a { color: var(--text) !important; }
+  .header.scrolled .nav.open a { color: var(--text); }
+  .mobile-toggle { display: block; }
+  .features-grid { grid-template-columns: 1fr; }
+  .products-grid { grid-template-columns: 1fr 1fr; gap: 16px; }
+  .testimonials-grid { grid-template-columns: 1fr; }
+  .footer-grid { grid-template-columns: 1fr; }
+  .about-stats { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 480px) {
+  .products-grid { grid-template-columns: 1fr; }
+  .hero h1 { font-size: 2rem; }
+  .section { padding: 60px 16px; }
+  .features { padding: 60px 16px; }
+  .about { padding: 60px 16px; }
+  .cta { padding: 60px 16px; }
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header" id="header">
+  <div class="header-inner">
+    <a href="/landing" class="logo">
+      <img src="{{ url_for('static', filename='img/LOGO.png') }}" alt="Vida Sana" class="logo-img">
+    </a>
+    <nav class="nav" id="nav">
+      <a href="#productos">Productos</a>
+      <a href="#nosotros">Nosotros</a>
+      <a href="#testimonios">Testimonios</a>
+      <a href="#contacto">Contacto</a>
+      <a href="/tienda" class="btn-nav"><i class="fas fa-store"></i> Tienda</a>
+    </nav>
+    <button class="mobile-toggle" id="mobileToggle" aria-label="Menú"><i class="fas fa-bars"></i></button>
+  </div>
+</header>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-bg-circle c1"></div>
+  <div class="hero-bg-circle c2"></div>
+  <div class="hero-inner">
+    <div class="hero-text">
+      <h1>{{ config.get('hero_title', 'Bienestar Natural<br><span>para tu Vida</span>') | safe }}</h1>
+      <p>{{ config.get('hero_subtitle', 'Descubre nuestra línea completa de suplementos, bebidas y productos naturales elaborados con los mejores insumos orgánicos del Perú.') | safe }}</p>
+      <div class="hero-actions">
+        <a href="/tienda" class="btn-primary"><i class="fas fa-shopping-bag"></i> VER PRODUCTOS</a>
+        <a href="#productos" class="btn-secondary"><i class="fas fa-arrow-down"></i> EXPLORAR</a>
+      </div>
+    </div>
+    <div class="hero-image-wrap">
+      <img src="https://naturasanaperu.com/wp-content/uploads/2023/06/1.png" alt="Productos Vida Sana">
+      <div class="floating-badge b1">
+        <div class="fb-icon green"><i class="fas fa-certificate"></i></div>
+        <div class="fb-text"><strong>100% Orgánico</strong><span>Registro sanitario</span></div>
+      </div>
+      <div class="floating-badge b2">
+        <div class="fb-icon gold"><i class="fas fa-truck"></i></div>
+        <div class="fb-text"><strong>Envíos Rápidos</strong><span>A todo el Perú</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="features" id="beneficios">
+  <div class="features-inner">
+    <div class="section-header reveal">
+      <div class="label">Beneficios</div>
+      <h2>¿Por qué elegir <span>Vida Sana</span>?</h2>
+      <p>Calidad, tradición y compromiso con tu bienestar.</p>
+    </div>
+    <div class="features-grid">
+      <div class="feature-card reveal reveal-delay-1">
+        <div class="feature-image">
+          <img src="https://images.unsplash.com/photo-1584017911766-d451b3d0e843?q=80&w=250" alt="Calidad Garantizada">
+        </div>
+        <h3>Calidad Garantizada</h3>
+        <p>Todos nuestros productos cuentan con registros sanitarios y cumplen los más altos estándares de calidad.</p>
+      </div>
+      <div class="feature-card reveal reveal-delay-2">
+        <div class="feature-image">
+          <img src="https://images.unsplash.com/photo-1550989460-0adf9ea622e2?q=80&w=250" alt="Insumos Orgánicos">
+        </div>
+        <h3>Insumos Orgánicos</h3>
+        <p>Seleccionamos los mejores ingredientes de la naturaleza para cada uno de nuestros productos.</p>
+      </div>
+      <div class="feature-card reveal reveal-delay-3">
+        <div class="feature-image">
+          <img src="https://images.unsplash.com/photo-1540555700478-4be289fbecef?q=80&w=250" alt="Proceso Natural">
+        </div>
+        <h3>Proceso Natural</h3>
+        <p>Elaboramos nuestros productos respetando procesos artesanales que preservan sus propiedades.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRODUCTS -->
+<section class="section" id="productos">
+  <div class="section-header reveal">
+    <div class="label">Productos</div>
+    <h2>Nuestros <span>Destacados</span></h2>
+    <p>Los favoritos de nuestros clientes, calidad y precio inigualables.</p>
+  </div>
+  <div class="products-grid" id="productsGrid">
+    <div class="prod-loading"><div class="spinner"></div><p style="margin-top:12px">Cargando productos...</p></div>
+  </div>
+  <div class="view-all-wrap reveal">
+    <a href="/tienda" class="btn-outline"><i class="fas fa-arrow-right"></i> VER TODOS LOS PRODUCTOS</a>
+  </div>
+</section>
+
+<!-- ABOUT -->
+<section class="about" id="nosotros">
+  <div class="about-inner">
+    <div class="about-grid">
+      <div class="about-image reveal">
+        <img src="https://naturasanaperu.com/wp-content/uploads/2023/06/MUJER-2-FRASCOSnatura.png" alt="Vida Sana Natural">
+      </div>
+      <div class="about-text reveal reveal-delay-1">
+        <h2>{{ config.get('about_title', 'Comprometidos con tu <span>Salud y Bienestar</span>') | safe }}</h2>
+        <p>{{ config.get('about_text', 'En Vida Sana llevamos años ofreciendo productos naturales de la más alta calidad. Creemos en el poder de la naturaleza para transformar vidas, por eso seleccionamos cuidadosamente cada ingrediente para garantizar productos que realmente funcionan.') | safe }}</p>
+        <p>Trabajamos directamente con productores locales para traerte lo mejor de la tierra peruana, procesado con técnicas modernas que preservan todos sus nutrientes.</p>
+        <div class="about-stats">
+          <div class="stat-item"><div class="num">50+</div><div class="label">Productos</div></div>
+          <div class="stat-item"><div class="num">1000+</div><div class="label">Clientes</div></div>
+          <div class="stat-item"><div class="num">5</div><div class="label">Categorías</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TESTIMONIALS -->
+<section class="section" id="testimonios">
+  <div class="section-header reveal">
+    <div class="label">Testimonios</div>
+    <h2>Lo que dicen <span>nuestros clientes</span></h2>
+    <p>La satisfacción de nuestros clientes es nuestra mejor carta de presentación.</p>
+  </div>
+  <div class="testimonials-grid">
+    <div class="testimonial-card reveal reveal-delay-1">
+      <div class="testimonial-stars"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
+      <p>"Los productos son de excelente calidad. El Colágeno H. me ha ayudado mucho con mis articulaciones. 100% recomendados."</p>
+      <div class="testimonial-author">
+        <div class="avatar">MC</div>
+        <div class="info"><strong>María C.</strong><span>Cliente verificada</span></div>
+      </div>
+    </div>
+    <div class="testimonial-card reveal reveal-delay-2">
+      <div class="testimonial-stars"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
+      <p>"Excelente atención y productos de primera. El STEM CELL me ha dado mucha más energía en mi día a día. Muy agradecido."</p>
+      <div class="testimonial-author">
+        <div class="avatar">PL</div>
+        <div class="info"><strong>Pedro L.</strong><span>Cliente verificada</span></div>
+      </div>
+    </div>
+    <div class="testimonial-card reveal reveal-delay-3">
+      <div class="testimonial-stars"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
+      <p>"Desde que consumo los productos de Vida Sana mi salud ha mejorado notablemente. El Propóleo es increíble para las defensas."</p>
+      <div class="testimonial-author">
+        <div class="avatar">LG</div>
+        <div class="info"><strong>Lucía G.</strong><span>Cliente verificada</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta">
+  <div class="cta-inner reveal">
+    <h2>¿Listo para empezar tu cambio?</h2>
+    <p>Descubre nuestra línea completa de productos naturales y empieza a sentir la diferencia. ¡Haz tu pedido hoy!</p>
+    <a href="https://wa.me/51951679585?text=Hola%2C%20quiero%20informaci%C3%B3n%20sobre%20sus%20productos" target="_blank" class="btn-primary"><i class="fab fa-whatsapp"></i> PEDIR POR WHATSAPP</a>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="footer" id="contacto">
+  <div class="footer-inner">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-brand">Vida <span>Sana</span></div>
+        <p class="footer-desc">Tu tienda de productos naturales, comprometida con tu bienestar y salud integral. Calidad y tradición desde el corazón del Perú.</p>
+        <div class="footer-social">
+          <a href="https://www.facebook.com/profile.php?id=61574949386722" target="_blank" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
+          <a href="https://www.instagram.com/4mnature" target="_blank" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+          <a href="https://wa.me/51951679585" target="_blank" aria-label="WhatsApp"><i class="fab fa-whatsapp"></i></a>
+          <a href="https://www.tiktok.com/@4m_nature" target="_blank" aria-label="TikTok"><i class="fab fa-tiktok"></i></a>
+        </div>
+      </div>
+      <div>
+        <h5>Enlaces</h5>
+        <ul>
+          <li><a href="/">Inicio</a></li>
+          <li><a href="/tienda">Tienda</a></li>
+          <li><a href="#productos">Productos</a></li>
+          <li><a href="#nosotros">Nosotros</a></li>
+        </ul>
+      </div>
+      <div>
+        <h5>Contacto</h5>
+        <p><i class="fas fa-phone"></i> +51 951 679 585</p>
+        <p><i class="fas fa-envelope"></i> 4Mnatureinfo@gmail.com</p>
+        <p><i class="fas fa-map-marker-alt"></i> Av Aviacion 338 Int. 114, La Victoria, Lima</p>
+        <p><i class="fas fa-clock"></i> Lun-Sab: 08:00 - 20:00</p>
+      </div>
+      <div>
+        <h5>Horario</h5>
+        <p style="margin-bottom:4px"><strong style="color:var(--white)">Lunes a Sábado</strong><br><span style="color:rgba(255,255,255,0.55)">08:00 — 20:00</span></p>
+        <p><strong style="color:var(--white)">Domingo</strong><br><span style="color:rgba(255,255,255,0.55)">Cerrado</span></p>
+      </div>
+    </div>
+    <div class="footer-bar">© 2026 Vida Sana. Todos los derechos reservados. Powered by <strong style="color:var(--gold)">4M Nature</strong></div>
+  </div>
+</footer>
+
+<!-- WHATSAPP FLOAT -->
+<a href="https://wa.me/51951679585?text=Hola%2C%20quiero%20informaci%C3%B3n%20sobre%20sus%20productos" target="_blank" class="whatsapp-float" aria-label="WhatsApp">
+  <i class="fab fa-whatsapp"></i>
+</a>
+
+<!-- TOAST -->
+<div class="toast-msg" id="toastMsg"><i class="fas fa-check-circle"></i> <span id="toastText"></span></div>
+
+<script>
+// Mobile nav toggle
+document.getElementById('mobileToggle').addEventListener('click', () => {
+  document.getElementById('nav').classList.toggle('open');
+});
+document.querySelectorAll('.nav a').forEach(a => {
+  a.addEventListener('click', () => document.getElementById('nav').classList.remove('open'));
+});
+
+// Header scroll
+const header = document.getElementById('header');
+window.addEventListener('scroll', () => {
+  header.classList.toggle('scrolled', window.scrollY > 60);
+});
+
+// Scroll reveal
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visible');
+    }
+  });
+}, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+// Products
+async function loadFeatured() {
+  const grid = document.getElementById('productsGrid');
+  try {
+    if (allProducts.length === 0) {
+      await fetchAllProducts();
+    }
+    const featured = allProducts.filter(p => p.destacado).slice(0, 6);
+    if (featured.length === 0) {
+      const fallback = allProducts.slice(0, 6);
+      if (fallback.length === 0) {
+        grid.innerHTML = '<div class="prod-error"><p>Pronto estaremos agregando productos.</p></div>';
+        return;
+      }
+      grid.innerHTML = fallback.map(p => prodCard(p)).join('');
+      return;
+    }
+    grid.innerHTML = featured.map(p => prodCard(p)).join('');
+  } catch (e) {
+    grid.innerHTML = '<div class="prod-error"><p>No pudimos cargar los productos. <a href="/tienda" style="color:var(--green-700);font-weight:700;">Ver en la tienda →</a></p></div>';
+  }
+}
+function prodCard(p) {
+  const out = p.stock <= 0;
+  return `
+    <div class="prod-card">
+      <div class="prod-card-image">
+        ${p.imagen ? `<img src="${p.imagen}" alt="${p.nombre}" loading="lazy">` : '<i class="fas fa-leaf" style="font-size:56px;color:#ccc"></i>'}
+      </div>
+      <div class="prod-card-body">
+        <div class="category">${p.categoria || 'General'}</div>
+        <h3>${p.nombre}</h3>
+        <div class="price">S/ ${p.precio.toFixed(2)}</div>
+        <div class="prod-card-actions">
+          <button class="btn-add" onclick="addToCart(${p.id})" ${out ? 'disabled' : ''}>
+            <i class="fas ${out ? 'fa-times-circle' : 'fa-cart-plus'}"></i> ${out ? 'AGOTADO' : 'AÑADIR'}
+          </button>
+          <button class="btn-wsp" onclick="whatsappProduct(${p.id})" title="Consultar por WhatsApp"><i class="fab fa-whatsapp"></i></button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// Cart + WhatsApp helpers
+let allProducts = [];
+
+async function fetchAllProducts() {
+  try {
+    const res = await fetch('/api/productos');
+    const data = await res.json();
+    if (data.ok && data.productos && data.productos.length > 0) {
+      allProducts = data.productos;
+      return;
+    }
+  } catch (e) {
+    console.log('Error cargando API, usando productos de muestra local');
+  }
+  
+  if (allProducts.length === 0) {
+    allProducts = [
+      { id: 1, nombre: 'STEM CELLS Células Madres', precio: 120.00, destacado: true, imagen: 'https://naturasanaperu.com/wp-content/uploads/2023/06/1.png', categoria: 'Bienestar', stock: 15 },
+      { id: 2, nombre: 'Colágeno Hidrolizado Premium', precio: 89.90, destacado: true, imagen: 'https://placehold.co/400x400/e8f5e9/2e7d32?text=Col%C3%A1geno', categoria: 'Suplementos', stock: 10 },
+      { id: 3, nombre: 'Propóleo + Miel + Eucalipto', precio: 45.00, destacado: true, imagen: 'https://placehold.co/400x400/fff3e0/e65100?text=Prop%C3%B3leo', categoria: 'Defensas', stock: 25 },
+      { id: 4, nombre: 'Maca Negra Gelatinizada', precio: 35.50, destacado: true, imagen: 'https://placehold.co/400x400/efebe9/4e342e?text=Maca+Negra', categoria: 'Energía', stock: 20 }
+    ];
+  }
+}
+
+function addToCart(id) {
+  const p = allProducts.find(x => x.id === id);
+  if (!p) return;
+  if (p.stock <= 0) { showToast('Producto agotado'); return; }
+  let cart = JSON.parse(localStorage.getItem('vid sana_cart') || '[]');
+  const exist = cart.find(c => c.id === id);
+  const currentQty = exist ? exist.qty : 0;
+  if (currentQty >= p.stock) { showToast('Stock máximo alcanzado'); return; }
+  if (exist) exist.qty += 1;
+  else cart.push({ id: p.id, nombre: p.nombre, precio: p.precio, qty: 1 });
+  localStorage.setItem('vid sana_cart', JSON.stringify(cart));
+  showToast(`${p.nombre} añadido`);
+  updateCartCount();
+}
+
+function whatsappProduct(id) {
+  const p = allProducts.find(x => x.id === id);
+  if (!p) return;
+  window.open(`https://wa.me/51951679585?text=${encodeURIComponent(`Hola, quiero información sobre ${p.nombre} (S/${p.precio.toFixed(2)})`)}`, '_blank');
+}
+
+function updateCartCount() {
+  const cart = JSON.parse(localStorage.getItem('vid sana_cart') || '[]');
+  const count = cart.reduce((s, c) => s + c.qty, 0);
+  // No cart icon on landing, but keep localStorage in sync for /tienda
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toastMsg');
+  document.getElementById('toastText').textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+// Init
+fetchAllProducts().then(() => {
+  updateCartCount();
+  loadFeatured();
+});
+</script>
+</body>
+</html>

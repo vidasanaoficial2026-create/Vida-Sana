@@ -6,7 +6,7 @@ import os
 import sys
 from datetime import datetime
 
-DB_PATH = os.path.join(os.path.dirname(__file__), 'tienda.db')
+DB_PATH = os.path.join(os.path.dirname(__file__), 'natura.db')
 
 def get_db():
     conn = sqlite3.connect(DB_PATH)
@@ -72,7 +72,7 @@ class StoreHandler(http.server.BaseHTTPRequestHandler):
     def _send_static(self, path):
         try:
             if path == '/' or path == '':
-                path = '/tienda.html'
+                path = '/landing.html'
             filepath = os.path.join(os.path.dirname(__file__), path.lstrip('/'))
             if not os.path.exists(filepath) or not os.path.isfile(filepath):
                 self.send_error(404)
@@ -119,10 +119,17 @@ class StoreHandler(http.server.BaseHTTPRequestHandler):
         if path == '/api/productos':
             conn = get_db()
             cat = query.get('categoria', [''])[0]
+            q = query.get('q', [''])[0]
+            sql = "SELECT * FROM productos WHERE 1=1"
+            params = []
             if cat:
-                rows = conn.execute("SELECT * FROM productos WHERE categoria=? ORDER BY destacado DESC, id DESC", (cat,)).fetchall()
-            else:
-                rows = conn.execute("SELECT * FROM productos ORDER BY destacado DESC, id DESC").fetchall()
+                sql += " AND categoria=?"
+                params.append(cat)
+            if q:
+                sql += " AND (nombre LIKE ? OR descripcion LIKE ? OR categoria LIKE ?)"
+                params.extend([f'%{q}%', f'%{q}%', f'%{q}%'])
+            sql += " ORDER BY destacado DESC, id DESC"
+            rows = conn.execute(sql, params).fetchall()
             conn.close()
             self._send_json({'ok': True, 'productos': [dict(r) for r in rows]})
             return

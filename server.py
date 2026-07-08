@@ -274,6 +274,11 @@ def tienda():
 def catalogo():
     return render_template('catalogo.html', show_nav=True, is_admin=False)
 
+@app.route('/producto')
+@app.route('/producto.html')
+def producto_view():
+    return render_template('producto.html', show_nav=True, is_admin=False)
+
 @app.route('/worker')
 def worker():
     return render_template('worker.html')
@@ -580,6 +585,15 @@ def create_producto():
         return jsonify({'error': str(e)}), 400
     finally:
         conn.close()
+
+@app.route('/api/productos/<int:pid>', methods=['GET'])
+def get_producto(pid):
+    conn = get_db()
+    row = conn.execute("SELECT * FROM productos WHERE id=?", (pid,)).fetchone()
+    conn.close()
+    if row:
+        return jsonify({'ok': True, 'producto': dict(row)})
+    return jsonify({'error': 'Not found'}), 404
 
 @app.route('/api/productos/<int:pid>', methods=['PUT', 'DELETE'])
 def manage_producto(pid):

@@ -370,8 +370,26 @@ def _get_user_data(row):
 
 @app.route('/api/productos', methods=['GET'])
 def get_productos():
+    categoria = request.args.get('categoria', '').strip()
+    q = request.args.get('q', '').strip()
+    
     conn = get_db()
-    rows = conn.execute("SELECT * FROM productos ORDER BY id DESC").fetchall()
+    
+    query = "SELECT * FROM productos WHERE 1=1"
+    params = []
+    
+    if categoria:
+        # Hacer coincidencia que no distinga mayúsculas y minúsculas y soporte comodines si es necesario
+        query += " AND categoria COLLATE NOCASE = ?"
+        params.append(categoria)
+        
+    if q:
+        query += " AND (nombre LIKE ? OR descripcion LIKE ?)"
+        params.extend([f'%{q}%', f'%{q}%'])
+        
+    query += " ORDER BY id DESC"
+    
+    rows = conn.execute(query, params).fetchall()
     conn.close()
     return jsonify({'ok': True, 'productos': [dict(r) for r in rows]})
 

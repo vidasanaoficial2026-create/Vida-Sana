@@ -380,11 +380,11 @@ def get_productos():
     
     if categoria:
         # Hacer coincidencia que no distinga mayúsculas y minúsculas y soporte comodines si es necesario
-        query += " AND categoria COLLATE NOCASE = ?"
+        query += " AND categoria = ?"
         params.append(categoria)
         
     if q:
-        query += " AND (nombre LIKE ? OR descripcion LIKE ?)"
+        query += " AND (nombre ILIKE ? OR descripcion ILIKE ?)"
         params.extend([f'%{q}%', f'%{q}%'])
         
     query += " ORDER BY id DESC"

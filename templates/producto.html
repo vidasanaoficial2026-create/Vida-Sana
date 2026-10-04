@@ -901,12 +901,80 @@ img { max-width: 100%; height: auto; display: block; }
           <button class="btn-wsp-large" style="background: #2e7d32;" onclick="addToCartAndGo(${p.id}, '${p.nombre.replace("'", "\'")}', ${p.precio}, '${p.imagen || ''}')">
             <i class="fas fa-shopping-cart"></i> Comprar
           </button>
-          <button class="btn-fav" onclick="alert('Añadido a favoritos')">
+          <button id="btnFavProduct" class="btn-fav" onclick="toggleFavoriteProduct(${p.id})">
             <i class="far fa-heart"></i> Favorito
           </button>
         </div>
       </div>
     `;
+    checkProductFavorite(p.id);
+  }
+
+  let isProductFav = false;
+  const IS_USER_AUTHENTICATED = {{ 'true' if session.get('user_id') else 'false' }};
+
+  async function checkProductFavorite(prodId) {
+    if (!IS_USER_AUTHENTICATED) return;
+    try {
+      const res = await fetch('/api/favoritos');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.ok && data.favoritos) {
+          const found = data.favoritos.some(f => f.producto_id === Number(prodId));
+          updateFavoriteButton(found);
+        }
+      }
+    } catch(e) {}
+  }
+
+  function updateFavoriteButton(fav) {
+    isProductFav = fav;
+    const btn = document.getElementById('btnFavProduct');
+    if (!btn) return;
+    if (fav) {
+      btn.style.borderColor = '#dc3545';
+      btn.style.color = '#dc3545';
+      btn.innerHTML = '<i class="fas fa-heart"></i> En Favoritos';
+    } else {
+      btn.style.borderColor = '#e2e8f0';
+      btn.style.color = '#4a5568';
+      btn.innerHTML = '<i class="far fa-heart"></i> Favorito';
+    }
+  }
+
+  async function toggleFavoriteProduct(productId) {
+    if (!IS_USER_AUTHENTICATED) {
+      alert('Inicia sesión para guardar este producto en tus favoritos.');
+      window.location.href = '/tienda?login=1';
+      return;
+    }
+
+    const method = isProductFav ? 'DELETE' : 'POST';
+    const url = isProductFav ? `/api/favoritos/${productId}` : '/api/favoritos';
+    const body = isProductFav ? null : JSON.stringify({ producto_id: Number(productId) });
+
+    try {
+      const res = await fetch(url, {
+        method: method,
+        headers: { 'Content-Type': 'application/json' },
+        body: body
+      });
+
+      if (res.status === 401) {
+        alert('Sesión expirada. Inicia sesión nuevamente.');
+        window.location.href = '/tienda?login=1';
+        return;
+      }
+
+      if (res.ok) {
+        updateFavoriteButton(!isProductFav);
+      } else {
+        const data = await res.json();
+        alert(data.error || 'No se pudo actualizar favoritos');
+      }
+    } catch(e) {
+      alert('Error de conexión al servidor.');
+    }
   }
 
   document.addEventListener('DOMContentLoaded', loadProduct);

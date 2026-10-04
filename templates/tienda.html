@@ -2094,6 +2094,30 @@ let currentFilteredProducts = [];
 let currentSlide = 0;
 let slideInterval;
 
+let userFavorites = new Set();
+let userFavoritesData = [];
+const IS_USER_AUTHENTICATED = {{ 'true' if session.get('user_id') else 'false' }};
+
+async function loadFavorites() {
+  if (!IS_USER_AUTHENTICATED) {
+    userFavorites.clear();
+    userFavoritesData = [];
+    return;
+  }
+  try {
+    const res = await fetch('/api/favoritos');
+    if (res.ok) {
+      const data = await res.json();
+      if (data.ok && data.favoritos) {
+        userFavoritesData = data.favoritos;
+        userFavorites = new Set(data.favoritos.map(f => f.producto_id));
+      }
+    }
+  } catch(e) {
+    console.error('Error cargando favoritos:', e);
+  }
+}
+
 function scrollToId(id) {
   const el = document.getElementById(id);
   if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -2124,6 +2148,7 @@ document.querySelector('.hero-slider').addEventListener('mouseleave', () => { sl
 // API
 async function loadProducts(cat, search) {
   try {
+    await loadFavorites();
     let url = '/api/productos?';
     if (cat) url += `categoria=${encodeURIComponent(cat)}&`;
     if (search) url += `q=${encodeURIComponent(search)}&`;
@@ -2167,15 +2192,13 @@ function loadMoreProducts() {
 
 function prodCard(p) {
   const outOfStock = p.stock <= 0;
-  let favs = [];
-  try { favs = JSON.parse(localStorage.getItem('favoritos')) || []; } catch(e){}
-  const isFav = favs.some(f => f.id === p.id);
+  const isFav = userFavorites.has(p.id);
   const heartClass = isFav ? 'fas fa-heart' : 'far fa-heart';
   const heartColor = isFav ? '#dc3545' : '#999';
   
   return `
     <div class="prod-card">
-      <div class="fav-icon" onclick="toggleFavoriteStore(${p.id}, '${p.nombre.replace(/'/g, "\'")}', ${p.precio}, '${p.imagen || ''}', this)" style="cursor:pointer; color:${heartColor};"><i class="${heartClass}"></i></div>
+      <div class="fav-icon" data-product-id="${p.id}" onclick="toggleFavoriteStore(${p.id}, '${p.nombre.replace(/'/g, "\\'")}', ${p.precio}, '${p.imagen || ''}', this)" style="cursor:pointer; color:${heartColor};"><i class="${heartClass}"></i></div>
       <div class="prod-card-image">
         ${p.imagen ? `<img src="${p.imagen}" alt="${p.nombre}" loading="lazy">` : '<i class="fas fa-leaf" style="font-size:56px;color:#ccc"></i>'}
       </div>
@@ -2387,21 +2410,66 @@ async function loadPedidos() {
   }
 }
 
-function loadFavoritosProfile() {
-  let favs = JSON.parse(localStorage.getItem('vid_sana_favoritos')) || [];
+async function loadFavoritosProfile() {
   const container = document.getElementById('contentFavoritos');
-  if (favs.length > 0) {
-    container.innerHTML = favs.map(f => `
-      <div style="border:1px solid #eee; padding:10px; border-radius:5px; margin-bottom:10px; display:flex; align-items:center; gap:10px;">
-        <img src="${f.image}" style="width:50px; height:50px; object-fit:cover; border-radius:5px;">
-        <div style="text-align:left; flex:1;">
-          <div style="font-weight:600; font-size:14px; color:var(--text)">${f.name}</div>
-          <div style="font-size:13px; color:var(--primary)">S/ ${f.price.toFixed(2)}</div>
+  if (!container) return;
+
+  if (!IS_USER_AUTHENTICATED) {
+    container.innerHTML = '<p style="text-align:center; color:#666; font-size:14px;">Inicia sesión para ver tus favoritos guardados.</p>';
+    return;
+  }
+
+  container.innerHTML = '<p style="text-align:center; color:#666; font-size:14px;"><i class="fas fa-spinner fa-spin"></i> Cargando favoritos...</p>';
+
+  try {
+    const res = await fetch('/api/favoritos');
+    if (res.status === 401) {
+      container.innerHTML = '<p style="text-align:center; color:#666; font-size:14px;">Inicia sesión para ver tus favoritos guardados.</p>';
+      return;
+    }
+    const data = await res.json();
+    if (data.ok && data.favoritos && data.favoritos.length > 0) {
+      userFavoritesData = data.favoritos;
+      userFavorites = new Set(data.favoritos.map(f => f.producto_id));
+      container.innerHTML = data.favoritos.map(f => `
+        <div style="border:1px solid #eee; padding:10px; border-radius:5px; margin-bottom:10px; display:flex; align-items:center; justify-content:space-between; gap:10px;">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <img src="${f.imagen || '/static/img/no-image.png'}" style="width:50px; height:50px; object-fit:cover; border-radius:5px;">
+            <div style="text-align:left;">
+              <a href="/producto.html?id=${f.producto_id}" style="font-weight:600; font-size:14px; color:var(--text); text-decoration:none;">${f.nombre}</a>
+              <div style="font-size:13px; color:var(--primary)">S/ ${parseFloat(f.precio).toFixed(2)}</div>
+            </div>
+          </div>
+          <button onclick="removeFavoriteFromProfile(${f.producto_id})" style="background:none; border:none; color:#dc3545; cursor:pointer; font-size:16px;" title="Eliminar de favoritos">
+            <i class="fas fa-trash-alt"></i>
+          </button>
         </div>
-      </div>
-    `).join('');
-  } else {
-    container.innerHTML = '<p style="text-align:center; color:#666; font-size:14px;">No tienes favoritos guardados.</p>';
+      `).join('');
+    } else {
+      container.innerHTML = '<p style="text-align:center; color:#666; font-size:14px;">No tienes favoritos guardados.</p>';
+    }
+  } catch (e) {
+    container.innerHTML = '<p style="text-align:center; color:#dc3545; font-size:14px;">Error al cargar favoritos.</p>';
+  }
+}
+
+async function removeFavoriteFromProfile(productId) {
+  try {
+    const res = await fetch('/api/favoritos/' + productId, { method: 'DELETE' });
+    if (res.ok) {
+      userFavorites.delete(productId);
+      userFavoritesData = userFavoritesData.filter(f => f.producto_id !== productId);
+      showToast('Eliminado de favoritos');
+      loadFavoritosProfile();
+      document.querySelectorAll(`.fav-icon[data-product-id="${productId}"]`).forEach(el => {
+        el.style.color = '#999';
+        el.innerHTML = '<i class="far fa-heart"></i>';
+      });
+    } else {
+      showToast('Error al eliminar de favoritos');
+    }
+  } catch(e) {
+    showToast('Error de conexión');
   }
 }
 
@@ -2448,26 +2516,61 @@ function togglePwVisibility(inputId, iconId) {
   }
 }
 
-  function toggleFavoriteStore(id, nombre, precio, imagen, element) {
-    let favs = [];
-    try { favs = JSON.parse(localStorage.getItem('favoritos')) || []; } catch(e){}
-    
-    const idx = favs.findIndex(f => f.id === id);
-    if (idx >= 0) {
-      favs.splice(idx, 1);
-      element.style.color = '#999';
-      element.innerHTML = '<i class="far fa-heart"></i>';
-      showToast('Eliminado de favoritos');
-    } else {
-      favs.push({id, nombre, precio, imagen});
-      element.style.color = '#dc3545';
-      element.innerHTML = '<i class="fas fa-heart"></i>';
-      showToast('Añadido a favoritos');
+  async function toggleFavoriteStore(id, nombre, precio, imagen, element) {
+    if (!IS_USER_AUTHENTICATED) {
+      showToast('Inicia sesión para guardar tus favoritos');
+      if (typeof toggleLogin === 'function') {
+        toggleLogin();
+      }
+      return;
     }
-    localStorage.setItem('favoritos', JSON.stringify(favs));
-    
-    if (typeof loadFavoritosProfile === 'function') {
-      loadFavoritosProfile();
+
+    const isCurrentlyFav = userFavorites.has(id);
+    const method = isCurrentlyFav ? 'DELETE' : 'POST';
+    const url = isCurrentlyFav ? `/api/favoritos/${id}` : '/api/favoritos';
+    const body = isCurrentlyFav ? null : JSON.stringify({ producto_id: id });
+
+    try {
+      const res = await fetch(url, {
+        method: method,
+        headers: { 'Content-Type': 'application/json' },
+        body: body
+      });
+
+      if (res.status === 401) {
+        showToast('Sesión requerida para favoritos');
+        if (typeof toggleLogin === 'function') toggleLogin();
+        return;
+      }
+
+      if (res.ok) {
+        if (isCurrentlyFav) {
+          userFavorites.delete(id);
+          userFavoritesData = userFavoritesData.filter(f => f.producto_id !== id);
+          element.style.color = '#999';
+          element.innerHTML = '<i class="far fa-heart"></i>';
+          showToast('Eliminado de favoritos');
+        } else {
+          userFavorites.add(id);
+          userFavoritesData.unshift({
+            producto_id: id,
+            nombre: nombre,
+            precio: precio,
+            imagen: imagen
+          });
+          element.style.color = '#dc3545';
+          element.innerHTML = '<i class="fas fa-heart"></i>';
+          showToast('Añadido a favoritos');
+        }
+        if (typeof loadFavoritosProfile === 'function') {
+          loadFavoritosProfile();
+        }
+      } else {
+        const data = await res.json();
+        showToast(data.error || 'No se pudo actualizar favoritos');
+      }
+    } catch(e) {
+      showToast('Error de conexión al actualizar favoritos');
     }
   }
 

@@ -52,6 +52,8 @@ class SQLiteEmulator:
         pass
     def commit(self):
         self.conn.commit()
+    def rollback(self):
+        self.conn.rollback()
     def close(self):
         self.conn.close()
 
@@ -242,23 +244,165 @@ def api_checkout():
     user_id = session['user_id']
     conn = get_db()
     try:
-        items = conn.execute('SELECT c.producto_id, c.cantidad, p.precio FROM carrito c JOIN productos p ON c.producto_id = p.id WHERE c.usuario_id = %s', (user_id,)).fetchall()
-        if not items:
+        # 1. Obtener items del carrito para el usuario ordenados por producto_id para prevenir deadlocks
+        cart_items = conn.execute('''
+            SELECT producto_id, cantidad 
+            FROM carrito 
+            WHERE usuario_id = %s 
+            ORDER BY producto_id ASC
+        ''', (user_id,)).fetchall()
+        
+        if not cart_items:
             return jsonify({'error': 'El carrito está vacío'}), 400
-        total = sum(i['cantidad'] * i['precio'] for i in items)
-        cur = conn.execute('INSERT INTO pedidos (usuario_id, total, estado) VALUES (%s, %s, %s) RETURNING id', (user_id, total, 'Pendiente'))
+            
+        # 2. Bloqueo pesimista y verificación de stock fila por fila (SELECT ... FOR UPDATE)
+        verified_items = []
+        total = 0.0
+        
+        for item in cart_items:
+            p_id = item['producto_id']
+            solicitado = item['cantidad']
+            
+            # Bloquea la fila del producto en PostgreSQL para prevenir overselling concurrente
+            prod = conn.execute('''
+                SELECT id, nombre, precio, stock 
+                FROM productos 
+                WHERE id = %s 
+                FOR UPDATE
+            ''', (p_id,)).fetchone()
+            
+            if not prod:
+                conn.rollback()
+                return jsonify({'error': f"El producto ID {p_id} ya no está disponible"}), 404
+                
+            if prod['stock'] < solicitado:
+                conn.rollback()
+                return jsonify({
+                    'error': f"Stock insuficiente para el producto '{prod['nombre']}'",
+                    'producto_id': prod['id'],
+                    'stock_disponible': prod['stock'],
+                    'cantidad_solicitada': solicitado
+                }), 409
+                
+            precio_unitario = float(prod['precio'])
+            subtotal = precio_unitario * solicitado
+            total += subtotal
+            
+            verified_items.append({
+                'producto_id': prod['id'],
+                'nombre': prod['nombre'],
+                'cantidad': solicitado,
+                'precio_unitario': precio_unitario
+            })
+            
+        # 3. Insertar pedido con total calculado estrictamente en el backend
+        cur = conn.execute(
+            'INSERT INTO pedidos (usuario_id, total, estado) VALUES (%s, %s, %s) RETURNING id',
+            (user_id, total, 'Pendiente')
+        )
         pedido_id = cur.fetchone()['id']
-        for item in items:
-            conn.execute('INSERT INTO detalles_pedido (pedido_id, producto_id, cantidad, precio_unitario) VALUES (%s, %s, %s, %s)', 
-                         (pedido_id, item['producto_id'], item['cantidad'], item['precio']))
-            conn.execute('UPDATE productos SET stock = stock - %s WHERE id = %s', (item['cantidad'], item['producto_id']))
+        
+        # 4. Insertar detalles con precio unitario congelado y descontar stock
+        for v in verified_items:
+            conn.execute(
+                'INSERT INTO detalles_pedido (pedido_id, producto_id, cantidad, precio_unitario) VALUES (%s, %s, %s, %s)', 
+                (pedido_id, v['producto_id'], v['cantidad'], v['precio_unitario'])
+            )
+            conn.execute(
+                'UPDATE productos SET stock = stock - %s WHERE id = %s',
+                (v['cantidad'], v['producto_id'])
+            )
+            
+        # 5. Vaciar carrito del usuario
         conn.execute('DELETE FROM carrito WHERE usuario_id = %s', (user_id,))
+        
+        # 6. Commit de toda la operación en una sola transacción
         conn.commit()
         return jsonify({'ok': True, 'pedido_id': pedido_id})
     except Exception as e:
         conn.rollback()
-        print("Error checkout:", e)
-        return jsonify({'error': str(e)}), 500
+        print("[ERROR CHECKOUT]", e)
+        return jsonify({'error': 'Error interno al procesar el pedido'}), 500
+    finally:
+        conn.close()
+
+# API FAVORITOS (Persistencia oficial en Base de Datos)
+@app.route('/api/favoritos', methods=['GET'])
+@login_required
+def get_favoritos():
+    user_id = session['user_id']
+    conn = get_db()
+    try:
+        rows = conn.execute("""
+            SELECT f.id as favorito_id, f.producto_id, f.fecha,
+                   p.nombre, p.precio, p.imagen, p.categoria, p.stock
+            FROM favoritos f
+            JOIN productos p ON f.producto_id = p.id
+            WHERE f.usuario_id = %s
+            ORDER BY f.id DESC
+        """, (user_id,)).fetchall()
+        return jsonify({'ok': True, 'favoritos': [dict(r) for r in rows]})
+    except Exception as e:
+        print("[ERROR FAVORITOS GET]", e)
+        return jsonify({'error': 'Error al consultar favoritos'}), 500
+    finally:
+        conn.close()
+
+@app.route('/api/favoritos', methods=['POST'])
+@login_required
+def add_favorito():
+    user_id = session['user_id']
+    data = request.json or {}
+    producto_id = data.get('producto_id')
+    if not producto_id:
+        return jsonify({'error': 'producto_id es requerido'}), 400
+    try:
+        producto_id = int(producto_id)
+    except (ValueError, TypeError):
+        return jsonify({'error': 'producto_id debe ser un número entero'}), 400
+
+    conn = get_db()
+    try:
+        prod = conn.execute("SELECT id FROM productos WHERE id = %s", (producto_id,)).fetchone()
+        if not prod:
+            return jsonify({'error': 'Producto no encontrado'}), 404
+
+        exists = conn.execute(
+            "SELECT id FROM favoritos WHERE usuario_id = %s AND producto_id = %s",
+            (user_id, producto_id)
+        ).fetchone()
+        if exists:
+            return jsonify({'ok': True, 'mensaje': 'El producto ya está en favoritos', 'favorito_id': exists['id']}), 200
+
+        conn.execute(
+            "INSERT INTO favoritos (usuario_id, producto_id) VALUES (%s, %s)",
+            (user_id, producto_id)
+        )
+        conn.commit()
+        return jsonify({'ok': True, 'mensaje': 'Producto añadido a favoritos'}), 201
+    except Exception as e:
+        conn.rollback()
+        print("[ERROR FAVORITOS POST]", e)
+        return jsonify({'error': 'Error al guardar favorito'}), 500
+    finally:
+        conn.close()
+
+@app.route('/api/favoritos/<int:producto_id>', methods=['DELETE'])
+@login_required
+def delete_favorito(producto_id):
+    user_id = session['user_id']
+    conn = get_db()
+    try:
+        conn.execute(
+            "DELETE FROM favoritos WHERE usuario_id = %s AND producto_id = %s",
+            (user_id, producto_id)
+        )
+        conn.commit()
+        return jsonify({'ok': True, 'mensaje': 'Producto eliminado de favoritos'})
+    except Exception as e:
+        conn.rollback()
+        print("[ERROR FAVORITOS DELETE]", e)
+        return jsonify({'error': 'Error al eliminar favorito'}), 500
     finally:
         conn.close()
 
@@ -487,11 +631,31 @@ def save_landing_config():
 @role_required('admin')
 def get_ventas_stats():
     conn = get_db()
-    ingresos = conn.execute("SELECT COALESCE(SUM(total), 0) FROM ventas").fetchone()[0]
-    total_ventas = conn.execute("SELECT COUNT(*) FROM ventas").fetchone()[0]
-    productos = conn.execute("SELECT COUNT(*) FROM productos").fetchone()[0]
-    conn.close()
-    return jsonify({'ok': True, 'ingresos': ingresos, 'total_ventas': total_ventas, 'productos': productos})
+    try:
+        row_pedidos = conn.execute("""
+            SELECT COALESCE(SUM(total), 0) as ingresos_pedidos, COUNT(*) as count_pedidos
+            FROM pedidos
+            WHERE estado != 'Cancelado'
+        """).fetchone()
+        
+        row_ventas = conn.execute("""
+            SELECT COALESCE(SUM(total), 0) as ingresos_ventas, COUNT(*) as count_ventas
+            FROM ventas
+        """).fetchone()
+        
+        ingresos = float(row_pedidos['ingresos_pedidos']) + float(row_ventas['ingresos_ventas'])
+        total_ventas = int(row_pedidos['count_pedidos']) + int(row_ventas['count_ventas'])
+        productos = conn.execute("SELECT COUNT(*) FROM productos").fetchone()[0]
+        return jsonify({
+            'ok': True,
+            'ingresos': ingresos,
+            'total_ventas': total_ventas,
+            'productos': productos,
+            'pedidos_count': int(row_pedidos['count_pedidos']),
+            'ventas_historicas_count': int(row_ventas['count_ventas'])
+        })
+    finally:
+        conn.close()
 
 @app.route('/api/workers', methods=['GET'])
 @role_required('admin')

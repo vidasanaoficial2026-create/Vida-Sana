@@ -1,6 +1,7 @@
 import os
 import hashlib
 from datetime import datetime
+from functools import wraps
 import psycopg2
 import psycopg2.extras
 import uuid
@@ -8,6 +9,7 @@ from flask import Flask, request, jsonify, render_template, redirect, url_for, s
 import json
 import urllib.parse
 from werkzeug.utils import secure_filename
+from werkzeug.security import generate_password_hash, check_password_hash
 import random
 import smtplib
 import time
@@ -31,10 +33,10 @@ def add_header(response):
     response.headers['Expires'] = '0'
     return response
 
-app.secret_key = 'natura-admin-secret-2026'
-
+# Configuration and secrets (loaded safely from environment)
+app.secret_key = os.getenv('SECRET_KEY', 'natura-admin-secret-2026')
+SECRET = os.getenv('SECRET_KEY', 'natura-admin-secret-2026')
 DB_PATH = os.path.join(os.path.dirname(__file__), 'natura.db')
-SECRET = 'natura-admin-secret-2026'
 
 class SQLiteEmulator:
     def __init__(self, conn):
@@ -54,62 +56,115 @@ class SQLiteEmulator:
         self.conn.close()
 
 def get_db():
-    conn = psycopg2.connect(os.getenv('DATABASE_URL'), cursor_factory=psycopg2.extras.DictCursor)
-    return SQLiteEmulator(conn)
+    db_url = os.getenv('DATABASE_URL')
+    if not db_url:
+        print("[DATABASE CRITICAL] DATABASE_URL no configurada en las variables de entorno.")
+        raise RuntimeError("DATABASE_URL no configurada.")
+    try:
+        conn = psycopg2.connect(
+            db_url,
+            cursor_factory=psycopg2.extras.DictCursor,
+            connect_timeout=8
+        )
+        return SQLiteEmulator(conn)
+    except psycopg2.OperationalError as e:
+        print(f"[DATABASE ERROR] Error conectando a PostgreSQL/Supabase: {e}")
+        raise
+
+@app.errorhandler(psycopg2.OperationalError)
+def handle_db_error(e):
+    print(f"[ERROR 503] Servicio de base de datos no disponible: {e}")
+    if request.path.startswith('/api/') or request.is_json:
+        return jsonify({
+            'error': 'Servicio de base de datos temporalmente no disponible. Intente nuevamente en unos instantes.',
+            'status': 503
+        }), 503
+    return render_template(
+        'login.html',
+        error='El servicio de base de datos está temporalmente no disponible. Por favor intente nuevamente en unos instantes.',
+        show_nav=False
+    ), 503
 
 def init_db():
-    conn = get_db()
-    # (Same table structures as app.py)
-    conn.executescript('''
-        CREATE TABLE IF NOT EXISTS usuarios (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT UNIQUE NOT NULL,
-            password TEXT NOT NULL,
-            nombre TEXT NOT NULL,
-            dni TEXT,
-            cargo TEXT DEFAULT '',
-            area TEXT DEFAULT '',
-            sueldo REAL DEFAULT 0,
-            fecha_ingreso TEXT DEFAULT '',
-            telefono TEXT DEFAULT '',
-            direccion TEXT DEFAULT '',
-            email TEXT DEFAULT '',
-            estado TEXT DEFAULT 'Activo' CHECK(estado IN ('Activo','Inactivo')),
-            rol TEXT NOT NULL DEFAULT 'worker' CHECK(rol IN ('admin','worker')),
-            foto TEXT DEFAULT '',
-            fecha_registro TEXT DEFAULT (datetime('now','-5 hours'))
-        );
-        CREATE TABLE IF NOT EXISTS productos (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            nombre TEXT NOT NULL,
-            descripcion TEXT DEFAULT '',
-            precio REAL NOT NULL,
-            categoria TEXT DEFAULT '',
-            imagen TEXT DEFAULT '',
-            stock INTEGER DEFAULT 0,
-            destacado INTEGER DEFAULT 0,
-            fecha_registro TEXT DEFAULT (datetime('now','-5 hours'))
-        );
-        CREATE TABLE IF NOT EXISTS ventas (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            producto_id INTEGER NOT NULL,
-            cantidad INTEGER NOT NULL,
-            total REAL NOT NULL,
-            fecha TEXT DEFAULT (datetime('now','-5 hours')),
-            FOREIGN KEY(producto_id) REFERENCES productos(id)
-        );
-    ''')
-    cur = conn.execute("SELECT id FROM usuarios WHERE username='admin'")
-    if not cur.fetchone():
-        pw = hashlib.sha256(f'admin123{SECRET}'.encode()).hexdigest()
-        conn.execute("INSERT INTO usuarios (username, password, nombre, rol) VALUES (?, ?, ?, 'admin')", ('admin', pw, 'Administrador'))
-        conn.commit()
-    conn.close()
+    try:
+        conn = get_db()
+        cur = conn.execute("SELECT id FROM usuarios WHERE username='admin'")
+        if not cur.fetchone():
+            pw = generate_password_hash('admin123')
+            conn.execute("INSERT INTO usuarios (username, password, nombre, rol) VALUES (%s, %s, %s, 'admin')", ('admin', pw, 'Administrador'))
+            conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"[INIT_DB WARNING] No se pudo inicializar la base de datos: {e}")
 
 init_db()
 
 def is_authenticated():
     return 'user_id' in session
+
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not is_authenticated():
+            if request.path.startswith('/api/') or request.is_json:
+                return jsonify({'error': 'No autorizado: sesión requerida'}), 401
+            return redirect(url_for('login_page'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+def role_required(*allowed_roles):
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            if not is_authenticated():
+                if request.path.startswith('/api/') or request.is_json:
+                    return jsonify({'error': 'No autorizado: sesión requerida'}), 401
+                return redirect(url_for('login_page'))
+            user_role = session.get('rol', '')
+            if user_role not in allowed_roles:
+                if request.path.startswith('/api/') or request.is_json:
+                    return jsonify({'error': 'Acceso denegado: permisos insuficientes'}), 403
+                return render_template('login.html', error='Acceso denegado: permisos insuficientes', show_nav=False), 403
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
+
+def verify_and_migrate_password(conn, user_id, password_input, stored_hash):
+    """
+    Verifica la contraseña y migra progresivamente hashes antiguos o texto plano
+    hacia Werkzeug PBKDF2/scrypt tras un login exitoso.
+    """
+    if not stored_hash or not password_input:
+        return False
+
+    is_valid = False
+    needs_rehash = False
+
+    # 1. Verificación moderna de Werkzeug
+    if stored_hash.startswith(('pbkdf2:', 'scrypt:', 'argon2:')):
+        is_valid = check_password_hash(stored_hash, password_input)
+    else:
+        # 2. Compatibilidad con hash antiguo SHA-256 + salt
+        legacy_hash = hashlib.sha256(f'{password_input}{SECRET}'.encode()).hexdigest()
+        if stored_hash == legacy_hash:
+            is_valid = True
+            needs_rehash = True
+        # 3. Compatibilidad temporal con texto plano antiguo
+        elif stored_hash == password_input:
+            is_valid = True
+            needs_rehash = True
+
+    # 4. Migración inmediata y automática tras credenciales válidas
+    if is_valid and needs_rehash:
+        new_hash = generate_password_hash(password_input)
+        try:
+            conn.execute("UPDATE usuarios SET password = %s WHERE id = %s", (new_hash, user_id))
+            conn.commit()
+            print(f"[AUTH] Contraseña migrada exitosamente a Werkzeug para el usuario ID {user_id}.")
+        except Exception as e:
+            print(f"[AUTH ERROR] Error al migrar contraseña del usuario ID {user_id}: {e}")
+
+    return is_valid
 
 @app.route('/login', methods=['GET'])
 def login_page():
@@ -135,7 +190,7 @@ def api_register():
         user = conn.execute("SELECT id FROM usuarios WHERE email = %s", (email,)).fetchone()
         if user:
             return jsonify({'error': 'Ya existe una cuenta con este correo'}), 400
-        pw_hash = hashlib.sha256(f'{password}{SECRET}'.encode()).hexdigest()
+        pw_hash = generate_password_hash(password)
         conn.execute(
             "INSERT INTO usuarios (username, password, nombre, email, rol) VALUES (%s, %s, %s, %s, 'cliente')",
             (username, pw_hash, nombre, email)
@@ -150,9 +205,8 @@ def api_register():
         conn.close()
 
 @app.route('/api/carrito', methods=['GET', 'POST'])
+@login_required
 def api_carrito():
-    if not is_authenticated():
-        return jsonify({'error': 'No autorizado'}), 401
     user_id = session['user_id']
     conn = get_db()
     try:
@@ -183,9 +237,8 @@ def api_carrito():
         conn.close()
 
 @app.route('/api/checkout', methods=['POST'])
+@login_required
 def api_checkout():
-    if not is_authenticated():
-        return jsonify({'error': 'No autorizado'}), 401
     user_id = session['user_id']
     conn = get_db()
     try:
@@ -270,11 +323,10 @@ def api_google_login():
 
 
 @app.route('/api/mis-pedidos', methods=['GET'])
+@login_required
 def api_mis_pedidos():
-    if 'user_id' not in session:
-        return jsonify({'error': 'No autorizado'}), 401
     conn = get_db()
-    pedidos = conn.execute("SELECT * FROM pedidos WHERE usuario_id=? ORDER BY id DESC", (session['user_id'],)).fetchall()
+    pedidos = conn.execute("SELECT * FROM pedidos WHERE usuario_id = %s ORDER BY id DESC", (session['user_id'],)).fetchall()
     conn.close()
     
     pedidos_list = []
@@ -288,20 +340,23 @@ def api_mis_pedidos():
 
 @app.route('/api/login', methods=['POST'])
 def api_login():
-    data = request.json
-    username = data.get('username', '')
+    data = request.json or {}
+    username = data.get('username', '').strip()
     password = data.get('password', '')
+    if not username or not password:
+        return jsonify({'error': 'Usuario y contraseña requeridos'}), 400
+
     conn = get_db()
-    row = conn.execute("SELECT * FROM usuarios WHERE username=?", (username,)).fetchone()
-    conn.close()
+    row = conn.execute("SELECT * FROM usuarios WHERE username = %s OR email = %s", (username, username)).fetchone()
     if row:
-        expected_pw = row['password']
-        if password == expected_pw or hashlib.sha256(f'{password}{SECRET}'.encode()).hexdigest() == expected_pw:
+        if verify_and_migrate_password(conn, row['id'], password, row['password']):
             session['user_id'] = row['id']
             session['nombre'] = row['nombre']
             session['email'] = row['email']
             session['rol'] = row['rol']
-            return jsonify({'ok': True}), 200
+            conn.close()
+            return jsonify({'ok': True, 'rol': row['rol'], 'nombre': row['nombre']}), 200
+    conn.close()
     return jsonify({'error': 'Credenciales inválidas'}), 401
 
 @app.route('/api/logout', methods=['POST'])
@@ -314,12 +369,18 @@ def api_logout():
 def index():
     if not is_authenticated():
         return redirect(url_for('login_page'))
-    return render_template('index.html', show_nav=True, is_admin=True)
+    user_rol = session.get('rol', '')
+    if user_rol == 'cliente':
+        return redirect(url_for('tienda'))
+    elif user_rol == 'worker':
+        return redirect(url_for('worker'))
+    elif user_rol == 'admin':
+        return render_template('index.html', show_nav=True, is_admin=True)
+    return redirect(url_for('login_page'))
 
 @app.route('/admin_productos')
+@role_required('admin')
 def admin_productos():
-    if not is_authenticated():
-        return redirect(url_for('login_page'))
     return render_template('admin_productos.html', show_nav=True, is_admin=True)
 
 @app.route('/landing')
@@ -331,15 +392,13 @@ def landing():
     return render_template('landing.html', show_nav=True, is_admin=False, config=config)
 
 @app.route('/dashboard')
+@role_required('admin')
 def dashboard():
-    if not is_authenticated():
-        return redirect(url_for('login_page'))
     return render_template('dashboard.html', show_nav=True, is_admin=True)
 
 @app.route('/admin_landing')
+@role_required('admin')
 def admin_landing():
-    if not is_authenticated():
-        return redirect(url_for('login_page'))
     conn = get_db()
     rows = conn.execute("SELECT clave, valor FROM landing_config").fetchall()
     conn.close()
@@ -360,8 +419,24 @@ def producto_view():
     return render_template('producto.html', show_nav=True, is_admin=False)
 
 @app.route('/worker')
+@role_required('admin', 'worker')
 def worker():
     return render_template('worker.html')
+
+@app.route('/worker/public/<string:uuid_val>', methods=['GET'])
+def worker_public_profile(uuid_val):
+    conn = get_db()
+    worker_row = conn.execute(
+        "SELECT nombre, cargo, area, estado, foto FROM usuarios WHERE public_uuid = %s AND rol = 'worker'",
+        (uuid_val,)
+    ).fetchone()
+    conn.close()
+    if not worker_row:
+        return render_template('login.html', error='Trabajador no encontrado o credencial inválida', show_nav=False), 404
+
+    if request.headers.get('Accept') == 'application/json' or request.args.get('format') == 'json':
+        return jsonify({'ok': True, 'worker': dict(worker_row)})
+    return render_template('worker_public.html', worker=dict(worker_row))
 
 def _get_user_data(row):
     d = dict(row)
@@ -394,9 +469,9 @@ def get_productos():
     return jsonify({'ok': True, 'productos': [dict(r) for r in rows]})
 
 @app.route('/api/landing_config', methods=['POST'])
+@role_required('admin')
 def save_landing_config():
-    if not is_authenticated(): return jsonify({'error': 'No autorizado'}), 401
-    data = request.json
+    data = request.json or {}
     conn = get_db()
     try:
         for k, v in data.items():
@@ -409,8 +484,8 @@ def save_landing_config():
         conn.close()
 
 @app.route('/api/ventas/stats', methods=['GET'])
+@role_required('admin')
 def get_ventas_stats():
-    if not is_authenticated(): return jsonify({'error': 'No autorizado'}), 401
     conn = get_db()
     ingresos = conn.execute("SELECT COALESCE(SUM(total), 0) FROM ventas").fetchone()[0]
     total_ventas = conn.execute("SELECT COUNT(*) FROM ventas").fetchone()[0]
@@ -419,25 +494,25 @@ def get_ventas_stats():
     return jsonify({'ok': True, 'ingresos': ingresos, 'total_ventas': total_ventas, 'productos': productos})
 
 @app.route('/api/workers', methods=['GET'])
+@role_required('admin')
 def get_workers():
-    if not is_authenticated(): return jsonify({'error': 'No autorizado'}), 401
     conn = get_db()
     rows = conn.execute("SELECT * FROM usuarios WHERE rol='worker' ORDER BY id DESC").fetchall()
     conn.close()
     return jsonify({'ok': True, 'workers': [_get_user_data(r) for r in rows]})
 
 @app.route('/api/workers', methods=['POST'])
+@role_required('admin')
 def create_worker():
-    if not is_authenticated(): return jsonify({'error': 'No autorizado'}), 401
     data = request.json or {}
-    nombre = data.get('nombre', '')
-    dni = data.get('dni', '')
-    cargo = data.get('cargo', '')
-    area = data.get('area', '')
+    nombre = data.get('nombre', '').strip()
+    dni = data.get('dni', '').strip()
+    cargo = data.get('cargo', '').strip()
+    area = data.get('area', '').strip()
     fecha_ingreso = data.get('fecha_ingreso', '')
-    telefono = data.get('telefono', '')
-    direccion = data.get('direccion', '')
-    email = data.get('email', '')
+    telefono = data.get('telefono', '').strip()
+    direccion = data.get('direccion', '').strip()
+    email = data.get('email', '').strip()
     estado = data.get('estado', 'Activo')
     foto = data.get('foto', '')
     
@@ -445,18 +520,24 @@ def create_worker():
     import string
     username = nombre.split(' ')[0].lower() + str(random.randint(100,999)) if nombre else 'user' + str(random.randint(1000,9999))
     password = dni if dni else ''.join(random.choices(string.ascii_letters + string.digits, k=8))
-    pw_hash = hashlib.sha256(f'{password}{SECRET}'.encode()).hexdigest()
+    pw_hash = generate_password_hash(password)
+    public_uuid = str(uuid.uuid4())
     
     conn = get_db()
     try:
         cur = conn.execute('''
-            INSERT INTO usuarios (username, password, nombre, dni, cargo, area, fecha_ingreso, telefono, direccion, email, estado, foto, rol)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'worker') RETURNING id
-        ''', (username, pw_hash, nombre, dni, cargo, area, fecha_ingreso, telefono, direccion, email, estado, foto))
+            INSERT INTO usuarios (username, password, nombre, dni, cargo, area, fecha_ingreso, telefono, direccion, email, estado, foto, rol, public_uuid)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'worker', %s) RETURNING id
+        ''', (username, pw_hash, nombre, dni, cargo, area, fecha_ingreso, telefono, direccion, email, estado, foto, public_uuid))
         new_id = cur.fetchone()['id']
         conn.commit()
         worker = conn.execute("SELECT * FROM usuarios WHERE id = %s", (new_id,)).fetchone()
-        return jsonify({'ok': True, 'generated_username': username, 'generated_password': password, 'worker': dict(worker)}), 201
+        return jsonify({
+            'ok': True,
+            'generated_username': username,
+            'generated_password': password,
+            'worker': _get_user_data(worker)
+        }), 201
     except Exception as e:
         conn.rollback()
         print('Error create worker:', e)
@@ -465,6 +546,7 @@ def create_worker():
         conn.close()
 
 @app.route('/api/workers/<int:worker_id>', methods=['GET'])
+@role_required('admin')
 def get_worker_by_id(worker_id):
     conn = get_db()
     worker = conn.execute("SELECT * FROM usuarios WHERE id = %s AND rol='worker'", (worker_id,)).fetchone()
@@ -474,8 +556,8 @@ def get_worker_by_id(worker_id):
     return jsonify({'error': 'Trabajador no encontrado'}), 404
 
 @app.route('/api/workers/<int:worker_id>', methods=['PUT'])
+@role_required('admin')
 def update_worker(worker_id):
-    if not is_authenticated(): return jsonify({'error': 'No autorizado'}), 401
     data = request.json or {}
     conn = get_db()
     try:
@@ -498,8 +580,8 @@ def update_worker(worker_id):
         conn.close()
 
 @app.route('/api/workers/count', methods=['GET'])
+@role_required('admin')
 def get_workers_count():
-    if not is_authenticated(): return jsonify({'error': 'No autorizado'}), 401
     conn = get_db()
     total = conn.execute("SELECT COUNT(*) FROM usuarios WHERE rol='worker'").fetchone()[0]
     activos = conn.execute("SELECT COUNT(*) FROM usuarios WHERE rol='worker' AND estado='Activo'").fetchone()[0]
@@ -507,19 +589,19 @@ def get_workers_count():
     return jsonify({'ok': True, 'total': total, 'activos': activos})
 
 @app.route('/api/ventas', methods=['POST'])
+@login_required
 def create_venta():
-    if not is_authenticated(): return jsonify({'error': 'No autorizado'}), 401
-    data = request.json
+    data = request.json or {}
     conn = get_db()
     try:
         pid = data['producto_id']
         qty = int(data.get('cantidad', 1))
-        row = conn.execute("SELECT precio, stock FROM productos WHERE id=?", (pid,)).fetchone()
+        row = conn.execute("SELECT precio, stock FROM productos WHERE id = %s", (pid,)).fetchone()
         if not row: return jsonify({'error': 'Producto no encontrado'}), 404
         if row['stock'] < qty: return jsonify({'error': 'Stock insuficiente'}), 400
         total = row['precio'] * qty
-        conn.execute("INSERT INTO ventas (producto_id, cantidad, total) VALUES (?,?,?)", (pid, qty, total))
-        conn.execute("UPDATE productos SET stock = stock - ? WHERE id=?", (qty, pid))
+        conn.execute("INSERT INTO ventas (producto_id, cantidad, total) VALUES (%s, %s, %s)", (pid, qty, total))
+        conn.execute("UPDATE productos SET stock = stock - %s WHERE id = %s", (qty, pid))
         conn.commit()
         return jsonify({'ok': True, 'total': total, 'cantidad': qty}), 201
     except Exception as e:
@@ -628,11 +710,12 @@ def reset_password():
         conn = get_db()
         try:
             # Primero verificamos si el correo existe
-            user = conn.execute("SELECT id FROM usuarios WHERE email = ?", (email,)).fetchone()
+            user = conn.execute("SELECT id FROM usuarios WHERE email = %s", (email,)).fetchone()
             if not user:
                 return jsonify({'error': 'No existe una cuenta con este correo electrónico'}), 400
             
-            conn.execute("UPDATE usuarios SET password = ? WHERE email = ?", (new_password, email))
+            pw_hash = generate_password_hash(new_password)
+            conn.execute("UPDATE usuarios SET password = %s WHERE email = %s", (pw_hash, email))
             conn.commit()
             
             # Limpiamos el código
@@ -649,9 +732,8 @@ def reset_password():
 
 
 @app.route('/api/productos', methods=['POST'])
+@role_required('admin')
 def create_producto():
-    if not is_authenticated(): return jsonify({'error': 'No autorizado'}), 401
-    
     # Soporte para FormData (archivos) y JSON
     if request.content_type and 'multipart/form-data' in request.content_type:
         data = request.form
@@ -694,8 +776,8 @@ def get_producto(pid):
     return jsonify({'error': 'Not found'}), 404
 
 @app.route('/api/productos/<int:pid>', methods=['PUT', 'DELETE'])
+@role_required('admin')
 def manage_producto(pid):
-    if not is_authenticated(): return jsonify({'error': 'No autorizado'}), 401
     conn = get_db()
     try:
         if request.method == 'DELETE':

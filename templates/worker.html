@@ -454,7 +454,7 @@ async function loadProfile() {
     document.getElementById('pArea').textContent = w.area || '-';
     document.getElementById('pFechaIngreso').textContent = w.fecha_ingreso ? w.fecha_ingreso.split('T')[0] : '-';
 
-    const profileUrl = window.location.origin + '/worker?id=' + id;
+    const profileUrl = window.location.origin + '/worker/public/' + (w.public_uuid || id);
     document.getElementById('profileLink').value = profileUrl;
 
     const qrData = profileUrl;

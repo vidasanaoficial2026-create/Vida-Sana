@@ -753,9 +753,9 @@ async function saveWorker() {
       closeModal(); loadWorkers();
       document.getElementById('credUsername').textContent = data.generated_username;
       document.getElementById('credPassword').textContent = data.generated_password;
-      const profileUrl = window.location.origin + '/worker?id=' + data.worker.id;
-      document.getElementById('credProfileLink').textContent = profileUrl;
-      const qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=' + encodeURIComponent(profileUrl);
+      const publicUrl = window.location.origin + '/worker/public/' + (data.worker.public_uuid || data.worker.id);
+      document.getElementById('credProfileLink').textContent = publicUrl;
+      const qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=' + encodeURIComponent(publicUrl);
       document.getElementById('credQrImg').src = qrUrl;
       document.getElementById('credQrDownload').href = qrUrl;
       document.getElementById('credModal').classList.add('open');
@@ -770,13 +770,13 @@ function showWorkerQr(id) {
     .then(r => r.json()).then(data => {
       if (!data.ok) return;
       const w = data.worker;
-      const profileUrl = window.location.origin + '/worker?id=' + w.id;
-      const qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=' + encodeURIComponent(profileUrl);
+      const publicUrl = window.location.origin + '/worker/public/' + (w.public_uuid || w.id);
+      const qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=' + encodeURIComponent(publicUrl);
       document.getElementById('qrModalTitle').textContent = 'QR — ' + w.username;
       document.getElementById('qrModalImg').src = qrUrl;
       document.getElementById('qrModalDownload').href = qrUrl;
       document.getElementById('qrModalDownload').download = 'QR_' + w.username + '.png';
-      document.getElementById('qrModalLink').value = profileUrl;
+      document.getElementById('qrModalLink').value = publicUrl;
       document.getElementById('qrModal').classList.add('open');
     });
 }

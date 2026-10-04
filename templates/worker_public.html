@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verificación de Personal — Vida Sana</title>
+  <link rel="icon" href="https://www.4mnature.com/img/logo4M.png" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    :root {
+      --primary: #0f3d20;
+      --primary-light: #1e5631;
+      --gold: #c8a84e;
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --text: #1e293b;
+      --text-muted: #64748b;
+      --success: #16a34a;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Outfit', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .badge-card {
+      background: var(--card);
+      border-radius: 20px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+      max-width: 420px;
+      width: 100%;
+      overflow: hidden;
+      border: 1px solid #e2e8f0;
+      text-align: center;
+    }
+    .badge-header {
+      background: linear-gradient(135deg, var(--primary), var(--primary-light));
+      color: #fff;
+      padding: 30px 20px 50px;
+      position: relative;
+    }
+    .badge-header h1 {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+    .badge-header p {
+      font-size: 12px;
+      opacity: 0.85;
+      margin-top: 4px;
+    }
+    .photo-wrapper {
+      position: relative;
+      margin-top: -45px;
+      display: inline-block;
+    }
+    .worker-photo {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 4px solid #fff;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.12);
+      background: #e2e8f0;
+    }
+    .photo-placeholder {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      background: #e2e8f0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 40px;
+      color: var(--text-muted);
+      border: 4px solid #fff;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.12);
+    }
+    .badge-body {
+      padding: 15px 25px 30px;
+    }
+    .worker-name {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--primary);
+      margin-top: 5px;
+    }
+    .worker-cargo {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--gold);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-top: 2px;
+    }
+    .worker-area {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 50px;
+      font-size: 13px;
+      font-weight: 600;
+      margin-top: 15px;
+    }
+    .status-active {
+      background: #dcfce7;
+      color: var(--success);
+    }
+    .status-inactive {
+      background: #f1f5f9;
+      color: var(--text-muted);
+    }
+    .verification-box {
+      margin-top: 25px;
+      background: #f8fafc;
+      border-radius: 12px;
+      padding: 12px;
+      border: 1px dashed #cbd5e1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .verification-box i {
+      color: var(--success);
+      font-size: 15px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="badge-card">
+  <div class="badge-header">
+    <i class="fas fa-leaf" style="font-size: 24px; color: var(--gold); margin-bottom: 8px;"></i>
+    <h1>Vida Sana — 4M Nature</h1>
+    <p>Credencial Digital de Verificación</p>
+  </div>
+
+  <div class="photo-wrapper">
+    {% if worker.foto %}
+      <img src="{{ worker.foto }}" alt="{{ worker.nombre }}" class="worker-photo">
+    {% else %}
+      <div class="photo-placeholder">
+        <i class="fas fa-user"></i>
+      </div>
+    {% endif %}
+  </div>
+
+  <div class="badge-body">
+    <h2 class="worker-name">{{ worker.nombre }}</h2>
+    <p class="worker-cargo">{{ worker.cargo or 'Colaborador' }}</p>
+    {% if worker.area %}
+      <p class="worker-area"><i class="fas fa-building" style="margin-right: 4px;"></i>Área: {{ worker.area }}</p>
+    {% endif %}
+
+    <div>
+      {% if worker.estado == 'Activo' %}
+        <span class="status-badge status-active">
+          <i class="fas fa-check-circle"></i> Personal Activo
+        </span>
+      {% else %}
+        <span class="status-badge status-inactive">
+          <i class="fas fa-circle-minus"></i> Estado: {{ worker.estado }}
+        </span>
+      {% endif %}
+    </div>
+
+    <div class="verification-box">
+      <i class="fas fa-shield-halved"></i>
+      <span>Identidad verificada en los sistemas oficiales de Vida Sana</span>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

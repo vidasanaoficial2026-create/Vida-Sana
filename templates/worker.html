@@ -418,14 +418,10 @@ async function api(method, path) {
 async function loadProfile() {
   const params = new URLSearchParams(window.location.search);
   const id = params.get('id');
-  if (!id) {
-    document.getElementById('loadingState').style.display = 'none';
-    document.getElementById('errorState').style.display = 'block';
-    return;
-  }
   try {
-    const data = await api('GET', '/api/workers/' + id);
-    if (!data.ok) throw new Error('No encontrado');
+    const endpoint = id ? ('/api/workers/' + encodeURIComponent(id)) : '/api/worker/me';
+    const data = await api('GET', endpoint);
+    if (!data.ok || !data.worker) throw new Error('No encontrado');
     const w = data.worker;
     document.getElementById('loadingState').style.display = 'none';
     document.getElementById('profileCard').style.display = 'block';
@@ -454,15 +450,20 @@ async function loadProfile() {
     document.getElementById('pArea').textContent = w.area || '-';
     document.getElementById('pFechaIngreso').textContent = w.fecha_ingreso ? w.fecha_ingreso.split('T')[0] : '-';
 
-    const profileUrl = window.location.origin + '/worker/public/' + (w.public_uuid || id);
+    const profileUrl = w.public_uuid
+      ? (window.location.origin + '/worker/public/' + w.public_uuid)
+      : '';
     document.getElementById('profileLink').value = profileUrl;
 
-    const qrData = profileUrl;
-    const qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=' + encodeURIComponent(qrData);
-    document.getElementById('profileQr').src = qrUrl;
-
-    window._qrUrl = qrUrl;
-    window._profileUrl = profileUrl;
+    const qrCard = document.querySelector('.qr-section-card');
+    if (profileUrl) {
+      const qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=' + encodeURIComponent(profileUrl);
+      document.getElementById('profileQr').src = qrUrl;
+      window._qrUrl = qrUrl;
+      window._profileUrl = profileUrl;
+    } else if (qrCard) {
+      qrCard.style.display = 'none';
+    }
 
     document.title = '4M Nature - ' + w.nombre;
   } catch (e) {

@@ -153,8 +153,26 @@
     <p>Credencial Digital de Verificación</p>
   </div>
 
+  {% if error or not worker %}
+  <div class="badge-body" style="padding-top: 32px;">
+    <div style="width: 72px; height: 72px; border-radius: 50%; background: #fee2e2; color: #dc2626; display: inline-flex; align-items: center; justify-content: center; font-size: 30px; margin-bottom: 14px;">
+      <i class="fas fa-triangle-exclamation"></i>
+    </div>
+    <h2 class="worker-name" style="font-size: 20px;">{{ error_title or 'Credencial No Encontrada' }}</h2>
+    <p style="font-size: 14px; color: var(--text-muted); margin-top: 8px; line-height: 1.5;">
+      {{ error or 'El código QR no corresponde a un trabajador registrado o está desactualizado.' }}
+    </p>
+    <div class="verification-box" style="margin-top: 20px;">
+      <i class="fas fa-circle-info" style="color: var(--gold);"></i>
+      <span>{{ error_hint or 'Solicita al administrador un código QR actualizado' }}</span>
+    </div>
+    <a href="/tienda" style="display: inline-flex; align-items: center; gap: 8px; margin-top: 20px; background: var(--primary); color: #fff; text-decoration: none; padding: 10px 20px; border-radius: 10px; font-size: 13px; font-weight: 600;">
+      <i class="fas fa-store"></i> Ir a la Tienda
+    </a>
+  </div>
+  {% else %}
   <div class="photo-wrapper">
-    {% if worker.foto %}
+    {% if worker.foto and worker.foto.strip() %}
       <img src="{{ worker.foto }}" alt="{{ worker.nombre }}" class="worker-photo">
     {% else %}
       <div class="photo-placeholder">
@@ -187,6 +205,7 @@
       <span>Identidad verificada en los sistemas oficiales de Vida Sana</span>
     </div>
   </div>
+  {% endif %}
 </div>
 
 </body>

@@ -76,14 +76,23 @@ def get_db():
 @app.errorhandler(psycopg2.OperationalError)
 def handle_db_error(e):
     print(f"[ERROR 503] Servicio de base de datos no disponible: {e}")
+    error_msg = 'El servicio de base de datos está temporalmente no disponible. Por favor intente nuevamente en unos instantes.'
     if request.path.startswith('/api/') or request.is_json:
         return jsonify({
             'error': 'Servicio de base de datos temporalmente no disponible. Intente nuevamente en unos instantes.',
             'status': 503
         }), 503
+    if request.path.startswith('/worker/public/'):
+        return render_template(
+            'worker_public.html',
+            worker=None,
+            error=error_msg,
+            error_title='Servicio No Disponible',
+            error_hint='Intenta escanear el código nuevamente en unos minutos'
+        ), 503
     return render_template(
         'login.html',
-        error='El servicio de base de datos está temporalmente no disponible. Por favor intente nuevamente en unos instantes.',
+        error=error_msg,
         show_nav=False
     ), 503
 
@@ -94,6 +103,22 @@ def init_db():
         if not cur.fetchone():
             pw = generate_password_hash('admin123')
             conn.execute("INSERT INTO usuarios (username, password, nombre, rol) VALUES (%s, %s, %s, 'admin')", ('admin', pw, 'Administrador'))
+            conn.commit()
+        col = conn.execute(
+            "SELECT 1 FROM information_schema.columns WHERE table_name = 'usuarios' AND column_name = 'public_uuid'"
+        ).fetchone()
+        if not col:
+            conn.execute("ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS public_uuid VARCHAR(64) UNIQUE")
+            conn.commit()
+        missing_uuids = conn.execute(
+            "SELECT id FROM usuarios WHERE rol = 'worker' AND (public_uuid IS NULL OR public_uuid = '')"
+        ).fetchall()
+        if missing_uuids:
+            for row in missing_uuids:
+                conn.execute(
+                    "UPDATE usuarios SET public_uuid = %s WHERE id = %s AND (public_uuid IS NULL OR public_uuid = '')",
+                    (str(uuid.uuid4()), row['id'])
+                )
             conn.commit()
         conn.close()
     except Exception as e:
@@ -570,21 +595,46 @@ def worker():
 @app.route('/worker/public/<string:uuid_val>', methods=['GET'])
 def worker_public_profile(uuid_val):
     conn = get_db()
-    worker_row = conn.execute(
-        "SELECT nombre, cargo, area, estado, foto FROM usuarios WHERE public_uuid = %s AND rol = 'worker'",
-        (uuid_val,)
-    ).fetchone()
-    conn.close()
-    if not worker_row:
-        return render_template('login.html', error='Trabajador no encontrado o credencial inválida', show_nav=False), 404
+    try:
+        worker_row = conn.execute(
+            "SELECT nombre, cargo, area, estado, foto FROM usuarios WHERE public_uuid = %s AND rol = 'worker'",
+            (uuid_val,)
+        ).fetchone()
+    finally:
+        conn.close()
 
-    if request.headers.get('Accept') == 'application/json' or request.args.get('format') == 'json':
+    wants_json = request.headers.get('Accept') == 'application/json' or request.args.get('format') == 'json'
+    if not worker_row:
+        error_msg = 'Trabajador no encontrado o credencial inválida'
+        if wants_json:
+            return jsonify({'ok': False, 'error': error_msg}), 404
+        return render_template('worker_public.html', worker=None, error=error_msg), 404
+
+    if wants_json:
         return jsonify({'ok': True, 'worker': dict(worker_row)})
-    return render_template('worker_public.html', worker=dict(worker_row))
+    return render_template('worker_public.html', worker=dict(worker_row), error=None)
 
 def _get_user_data(row):
     d = dict(row)
     del d['password']
+    return d
+
+def _ensure_worker_public_uuid(conn, row):
+    """Ensure every worker record has a persisted public_uuid before exposing it."""
+    d = _get_user_data(row)
+    if d.get('rol') == 'worker' and not d.get('public_uuid'):
+        new_uuid = str(uuid.uuid4())
+        updated = conn.execute(
+            "UPDATE usuarios SET public_uuid = %s WHERE id = %s AND (public_uuid IS NULL OR public_uuid = '') RETURNING public_uuid",
+            (new_uuid, d['id'])
+        ).fetchone()
+        if updated:
+            d['public_uuid'] = updated['public_uuid']
+        else:
+            refetched = conn.execute("SELECT public_uuid FROM usuarios WHERE id = %s", (d['id'],)).fetchone()
+            if refetched:
+                d['public_uuid'] = refetched['public_uuid']
+        conn.commit()
     return d
 
 @app.route('/api/productos', methods=['GET'])
@@ -661,9 +711,11 @@ def get_ventas_stats():
 @role_required('admin')
 def get_workers():
     conn = get_db()
-    rows = conn.execute("SELECT * FROM usuarios WHERE rol='worker' ORDER BY id DESC").fetchall()
-    conn.close()
-    return jsonify({'ok': True, 'workers': [_get_user_data(r) for r in rows]})
+    try:
+        rows = conn.execute("SELECT * FROM usuarios WHERE rol='worker' ORDER BY id DESC").fetchall()
+        return jsonify({'ok': True, 'workers': [_ensure_worker_public_uuid(conn, r) for r in rows]})
+    finally:
+        conn.close()
 
 @app.route('/api/workers', methods=['POST'])
 @role_required('admin')
@@ -709,15 +761,32 @@ def create_worker():
     finally:
         conn.close()
 
-@app.route('/api/workers/<int:worker_id>', methods=['GET'])
-@role_required('admin')
-def get_worker_by_id(worker_id):
+@app.route('/api/worker/me', methods=['GET'])
+@role_required('admin', 'worker')
+def get_my_worker_profile():
+    user_id = session.get('user_id')
     conn = get_db()
-    worker = conn.execute("SELECT * FROM usuarios WHERE id = %s AND rol='worker'", (worker_id,)).fetchone()
-    conn.close()
-    if worker:
-        return jsonify({'ok': True, 'worker': _get_user_data(worker)})
-    return jsonify({'error': 'Trabajador no encontrado'}), 404
+    try:
+        row = conn.execute("SELECT * FROM usuarios WHERE id = %s", (user_id,)).fetchone()
+        if not row:
+            return jsonify({'error': 'Usuario no encontrado'}), 404
+        return jsonify({'ok': True, 'worker': _ensure_worker_public_uuid(conn, row)})
+    finally:
+        conn.close()
+
+@app.route('/api/workers/<int:worker_id>', methods=['GET'])
+@role_required('admin', 'worker')
+def get_worker_by_id(worker_id):
+    if session.get('rol') == 'worker' and session.get('user_id') != worker_id:
+        return jsonify({'error': 'Acceso denegado: permisos insuficientes'}), 403
+    conn = get_db()
+    try:
+        worker = conn.execute("SELECT * FROM usuarios WHERE id = %s AND rol='worker'", (worker_id,)).fetchone()
+        if worker:
+            return jsonify({'ok': True, 'worker': _ensure_worker_public_uuid(conn, worker)})
+        return jsonify({'error': 'Trabajador no encontrado'}), 404
+    finally:
+        conn.close()
 
 @app.route('/api/workers/<int:worker_id>', methods=['PUT'])
 @role_required('admin')

@@ -753,11 +753,15 @@ async function saveWorker() {
       closeModal(); loadWorkers();
       document.getElementById('credUsername').textContent = data.generated_username;
       document.getElementById('credPassword').textContent = data.generated_password;
-      const publicUrl = window.location.origin + '/worker/public/' + (data.worker.public_uuid || data.worker.id);
+      const publicUrl = data.worker.public_uuid
+        ? (window.location.origin + '/worker/public/' + data.worker.public_uuid)
+        : '';
       document.getElementById('credProfileLink').textContent = publicUrl;
-      const qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=' + encodeURIComponent(publicUrl);
+      const qrUrl = publicUrl
+        ? ('https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=' + encodeURIComponent(publicUrl))
+        : '';
       document.getElementById('credQrImg').src = qrUrl;
-      document.getElementById('credQrDownload').href = qrUrl;
+      document.getElementById('credQrDownload').href = qrUrl || '#';
       document.getElementById('credModal').classList.add('open');
     }
   } catch (e) { alert(e.message); }
@@ -768,9 +772,12 @@ function closeCredModal() { document.getElementById('credModal').classList.remov
 function showWorkerQr(id) {
   fetch(API + '/api/workers/' + id)
     .then(r => r.json()).then(data => {
-      if (!data.ok) return;
+      if (!data.ok || !data.worker || !data.worker.public_uuid) {
+        alert((data && data.error) || 'No se pudo obtener el código QR del trabajador');
+        return;
+      }
       const w = data.worker;
-      const publicUrl = window.location.origin + '/worker/public/' + (w.public_uuid || w.id);
+      const publicUrl = window.location.origin + '/worker/public/' + w.public_uuid;
       const qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=' + encodeURIComponent(publicUrl);
       document.getElementById('qrModalTitle').textContent = 'QR — ' + w.username;
       document.getElementById('qrModalImg').src = qrUrl;
@@ -778,7 +785,8 @@ function showWorkerQr(id) {
       document.getElementById('qrModalDownload').download = 'QR_' + w.username + '.png';
       document.getElementById('qrModalLink').value = publicUrl;
       document.getElementById('qrModal').classList.add('open');
-    });
+    })
+    .catch(() => alert('Error al cargar el código QR del trabajador'));
 }
 
 document.addEventListener('keydown', (e) => {

@@ -115,7 +115,7 @@ body {
       <label>Contraseña</label>
       <input type="password" id="password" placeholder="••••••••" required>
     </div>
-    <div class="error-msg" id="errorMsg">Credenciales inválidas</div>
+    <div class="error-msg" id="errorMsg" {% if error %}style="display:block"{% endif %}>{{ error or 'Credenciales inválidas' }}</div>
     <button type="submit" class="btn-login" id="btnSubmit">INICIAR SESIÓN</button>
   </form>
 </div>
